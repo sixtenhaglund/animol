@@ -518,7 +518,7 @@ function drawLegs(g, R, L) {                 // new: legs for the shore
 // ---------------------------------------------------------------- FOOD (his meat + seagrass / tong / mussle)
 const MEAT_COLS = [["#ffc0d4", "#f58fb0", "#c05b80"], ["#c98b55", "#9a5a25", "#5c3412"], ["#ff6ee6", "#e01fc4", "#8a0d79"]];
 const meatShapes = [0, 1, 2].map(v => { const r = seeded(v * 31 + 5); return Array.from({ length: 11 }, () => 0.82 + r() * 0.22); });
-function drawFood(g, f, t) {
+function drawFoodBase(g, f, t) {
   const pop = f.age < 0.35 ? easeOutBack(f.age / 0.35) : 1;
   g.save(); g.translate(f.x, f.y); g.scale(pop, pop);
   if (f.glow) { g.save(); g.globalCompositeOperation = "lighter"; circle(g, 0, 0, 26); g.fillStyle = radial(g, 0, 0, 26, [f.sprite === "meat" ? "rgba(255,90,140,.35)" : "rgba(90,255,120,.35)", "rgba(0,0,0,0)"], 0, 0); g.fill(); g.restore(); }
@@ -651,7 +651,7 @@ function drawEnemyBase(g, e, t) {
     for (let i = 0; i < 7; i++) { const x0 = 24 + i * 4, y1 = -2 - jaw * 7 - i * 1.7, y2 = 2 + jaw * 7 + i * 1.7;
       g.beginPath(); g.moveTo(x0, y1 - 5); g.lineTo(x0 + 2, y1 + 3); g.lineTo(x0 + 4, y1 - 5); g.fill(); g.stroke();
       g.beginPath(); g.moveTo(x0, y2 + 5); g.lineTo(x0 + 2, y2 - 3); g.lineTo(x0 + 4, y2 + 5); g.fill(); g.stroke(); }
-    for (const s of [-1, 1]) { g.save(); g.shadowColor = "#ff2020"; g.shadowBlur = 12; eyeDot(g, 22, s * 14, 4.2, true, true); g.restore(); }
+    for (const s of [-1, 1]) { glowAt(g, 22, s * 14, 14, "255,40,40", 0.8); eyeDot(g, 22, s * 14, 4.2, true, true); }
   }
   g.restore();
 }
@@ -757,11 +757,12 @@ function drawSpace(g, t, px = 0, py = 0) {
   }
   for (const s of spaceStars) {
     const tw = 0.55 + 0.45 * Math.sin(t * (1 + s.d * 2) + s.p);
-    g.fillStyle = `rgba(255,255,255,${tw * s.d})`;
+    g.globalAlpha = tw * s.d; g.fillStyle = "#fff";
     const x = ((s.x * w - px * 30 * s.d) % w + w) % w, y = ((s.y * h - py * 30 * s.d) % h + h) % h;
     g.fillRect(x, y, s.s, s.s);
     if (s.s > 1.7 && tw > 0.9) { g.fillRect(x - 3, y + s.s / 2 - 0.4, 6 + s.s, 0.8); g.fillRect(x + s.s / 2 - 0.4, y - 3, 0.8, 6 + s.s); }
   }
+  g.globalAlpha = 1;
   if (!shooting && Math.random() < 0.004) shooting = { x: rnd(0.2, 1) * w, y: rnd(0, 0.4) * h, t: 0 };
   if (shooting) {
     shooting.t += 1 / 60; const k = shooting.t / 0.8, x = shooting.x - k * 420, y = shooting.y + k * 200;
@@ -963,8 +964,7 @@ function drawEnemy(g, e, t) {
   if (e.type === "worm") return drawWorm(g, e, t);
   const sc = e.scale || 1, D = ENEMY[e.type];
   if (e.alpha) {
-    g.save(); g.globalCompositeOperation = "lighter"; const r = D.r * sc * 1.9;
-    circle(g, e.x, e.y, r); g.fillStyle = radial(g, e.x, e.y, r, ["rgba(255,210,60,.35)", "rgba(255,150,30,0)"], 0, 0); g.fill(); g.restore();
+    if (!LOW()) glowAt(g, e.x, e.y, D.r * sc * 1.9, "255,190,50", 0.5);
   }
   g.save(); g.translate(e.x, e.y); g.scale(sc, sc); g.translate(-e.x, -e.y);
   if (e.type === "mite") drawMite(g, e, t);
@@ -1070,7 +1070,7 @@ function drawWorm(g, e, t) {                 // THE SAND WORM (final boss)
   circle(g, 20, 0, 16 + open * 6); g.fillStyle = "#2a0006"; g.fill();
   g.fillStyle = "#f2e0c8";
   for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, rr = 16 + open * 6; g.beginPath(); g.moveTo(20 + Math.cos(a) * rr, Math.sin(a) * rr); g.lineTo(20 + Math.cos(a + 0.2) * rr * 0.55, Math.sin(a + 0.2) * rr * 0.55); g.lineTo(20 + Math.cos(a + 0.4) * rr, Math.sin(a + 0.4) * rr); g.fill(); }
-  for (const s of [-1, 1]) { g.save(); g.shadowColor = "#ffea00"; g.shadowBlur = 12; circle(g, -6, s * 22, 4.5); g.fillStyle = "#ffe14a"; g.fill(); circle(g, -5, s * 22, 2); g.fillStyle = "#000"; g.fill(); g.restore(); }
+  for (const s of [-1, 1]) { g.save(); glowAt(g, -6, s * 22, 14, "255,234,0", 0.8); circle(g, -6, s * 22, 4.5); g.fillStyle = "#ffe14a"; g.fill(); circle(g, -5, s * 22, 2); g.fillStyle = "#000"; g.fill(); g.restore(); }
   g.restore();
   g.restore();
 }
@@ -1995,10 +1995,10 @@ function drawWorld() {
   const vw = BW / ZOOM, vh = BH / ZOOM, vx = cam.x - vw / 2 - 40, vy = cam.y - vh / 2 - 40;
 
   if (Z.kind === "sea" || Z.kind === "open") {   // moving caustic light on the floor
-    const pat = g.createPattern(getCaustics(), "repeat");
+    const pat = causticPattern(g);
     if (pat) {
       g.save(); g.globalCompositeOperation = "lighter";
-      for (const [sp, al, sc] of [[14, Z.kind === "sea" ? 0.1 : 0.06, 1.6], [-9, Z.kind === "sea" ? 0.07 : 0.045, 2.3]]) {
+      for (const [sp, al, sc] of [[14, Z.kind === "sea" ? 0.1 : 0.06, 1.6], [-9, Z.kind === "sea" ? 0.07 : 0.045, 2.3]].slice(0, LOW() ? 1 : 2)) {
         g.save(); g.globalAlpha = al; g.scale(sc, sc); g.translate(t * sp, t * sp * 0.6);
         g.fillStyle = pat; g.fillRect(vx / sc - t * sp, vy / sc - t * sp * 0.6, (vw + 80) / sc, (vh + 80) / sc); g.restore();
       }
@@ -2018,7 +2018,7 @@ function drawWorld() {
   if (!P.dead) shadow(g, P.x + sh[0], P.y + sh[1], playerRadius() * 1.1, playerRadius() * 0.8, sh[2]);
   for (const m of W.microbes) drawMicrobe(g, m, t);
   for (const f of W.food) drawFood(g, f, t);
-  for (const p of W.parts) if (p.type === "dust") { g.fillStyle = `rgba(${p.col === "moon" ? "185,188,200" : p.col === "mars" ? "190,90,40" : "200,170,110"},${p.life / p.max * 0.5})`; circle(g, p.x, p.y, p.size * (1.5 - p.life / p.max)); g.fill(); }
+  for (const p of W.parts) if (p.type === "dust") { g.globalAlpha = p.life / p.max * 0.5; g.fillStyle = p.col === "moon" ? "#b9bcc8" : p.col === "mars" ? "#be5a28" : "#c8aa6e"; circle(g, p.x, p.y, p.size * (1.5 - p.life / p.max)); g.fill(); g.globalAlpha = 1; }
   for (const e of W.enemies) drawEnemy(g, e, t);
   drawGhosts(g);
   if (!P.dead && !(P.inv > 0 && Math.floor(P.inv * 12) % 2 === 1 && P.inv < 1.9)) {
@@ -2085,7 +2085,7 @@ function drawForeground() {
   const g = ctx, Z = W.Z, t = G.t;
   if (Z.kind === "sea" || Z.kind === "open") {
     // kelp fronds drifting between you and the camera: they move 30% faster = parallax
-    for (const d of W.deco) {
+    for (const d of (LOW() ? [] : W.deco)) {
       const x = d.x + (d.x - cam.x) * 0.3, y = d.y + (d.y - cam.y) * 0.3;
       if (Math.abs(x - cam.x) > BW / ZOOM || Math.abs(y - cam.y) > BH / ZOOM) continue;
       const pts = [];
@@ -2104,15 +2104,14 @@ function drawForeground() {
     }
   }
   // god rays (screen space)
-  if (Z.kind === "sea" || Z.kind === "open" || Z.kind === "land") {
+  if (!LOW() && (Z.kind === "sea" || Z.kind === "open" || Z.kind === "land")) {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "lighter";
     const n = 6;
     for (let i = 0; i < n; i++) {
       const x0 = ((i / n) * BW * 1.4 - cam.x * ZOOM * 0.08 + Math.sin(t * 0.25 + i) * 40 * DPR) % (BW * 1.4) - BW * 0.1;
       const w0 = (40 + (i * 37) % 60) * DPR * (Z.kind === "land" ? 2 : 1);
       const a = (Z.kind === "land" ? 0.035 : 0.06) * (0.6 + 0.4 * Math.sin(t * 0.5 + i * 1.7));
-      const gr = g.createLinearGradient(0, 0, 0, BH); gr.addColorStop(0, `rgba(255,255,230,${a})`); gr.addColorStop(1, "rgba(255,255,230,0)");
-      g.fillStyle = gr;
+      g.globalAlpha = a / 0.06; g.fillStyle = rayGradient(g);   // one cached gradient, faded with globalAlpha
       g.beginPath(); g.moveTo(x0, 0); g.lineTo(x0 + w0, 0); g.lineTo(x0 + w0 * 2.2 + BH * 0.35, BH); g.lineTo(x0 + BH * 0.35, BH); g.closePath(); g.fill();
     }
     g.restore();
@@ -2236,7 +2235,7 @@ function drawHUD() {
   g.save(); if (psUI.x > mmx - 50 && psUI.y > mmy - 50) g.globalAlpha = 0.28;
   panel(mmx - 6, mmy - 6, mmw + 12, mmh + 12, { r: 14, fill: "rgba(4,12,34,.7)" });
   g.save(); roundRect(g, mmx, mmy, mmw, mmh, 10); g.clip();
-  g.globalAlpha = 0.5; g.drawImage(W.floor.canvas, mmx, mmy, mmw, mmh); g.globalAlpha = 1;
+  g.drawImage(minimapBase(mmw, mmh), mmx, mmy, mmw, mmh);   // small cached copy of the map
   for (const f of W.food) { g.fillStyle = f.sprite === "meat" ? "#ff8fb0" : "#5dff8a"; g.fillRect(mmx + f.x * s - 1.5, mmy + f.y * s - 1.5, 3, 3); }
   for (const e of W.enemies) { const D = ENEMY[e.type]; circle(g, mmx + e.x * s, mmy + e.y * s, D.boss ? 6 + Math.sin(G.t * 8) : D.prey ? 2.5 : 3.2); g.fillStyle = D.prey ? "#ffd21f" : "#ff3b3b"; g.fill(); }
   const vw = BW / ZOOM * s, vh = BH / ZOOM * s;
@@ -2449,7 +2448,7 @@ function drawEnding() {
 }
 
 // ---------------------------------------------------------------- frame
-function draw() {
+function drawFrame() {
   G.buttons = []; G._hovered = null;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = true;
@@ -2629,9 +2628,9 @@ function drawCollection() {
       const x = VW / 2 + (i - 2) * (cw + 14) + 7, y = 122 + row * (ch + 14);
       panel(x, y, cw, ch, { r: 18, fill: found ? "rgba(16,34,80,.85)" : "rgba(6,10,26,.8)", line: found ? "rgba(120,255,200,.5)" : "rgba(140,160,200,.2)" });
       g.save();
-      if (!found && "filter" in g) g.filter = "brightness(0) opacity(0.55)";
       const st = FORM_STATS[title];
-      drawCreature(g, x + cw / 2, y + 58, -0.3 + Math.sin(G.t + i + row) * 0.12, 1.25, creatureLook(type, st, { evolved: true, legs: true, helmet: true, moving: 0.4, walk: G.t * 6, t: G.t + i }));
+      if (!found) g.drawImage(silhouette(type, title), x + cw / 2 - 90, y + 58 - 90, 180, 180);   // cached dark shape (no slow ctx.filter)
+      else drawCreature(g, x + cw / 2, y + 58, -0.3 + Math.sin(G.t + i + row) * 0.12, 1.25, creatureLook(type, st, { evolved: true, legs: true, helmet: true, moving: 0.4, walk: G.t * 6, t: G.t + i }));
       g.restore();
       txt(found ? title : "???", x + cw / 2, y + 112, 16, found ? "#fff" : "#6b7590", { weight: 700 });
       if (found) txt("Best " + fmtTime(save.best[key] || 0) + (save.hardFound.includes(key) ? "  ★HARD" : ""), x + cw / 2, y + 133, 13, save.hardFound.includes(key) ? "#ff9a9a" : "#a9c6e8", { weight: 500 });
@@ -2680,6 +2679,309 @@ function drawShop() {
   button("sback", 24, 24, 130, 48, "‹ BACK", () => go(toMenu), { size: 20, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
   drawVolume();
 }
+
+// =====================================================================
+// PART 4 - PERFORMANCE
+// Canvas drawing is slowest when it has to: fill huge screens many times,
+// build new gradients every frame, blur things (shadowBlur), or draw
+// thousands of tiny paths. So we pre-draw ("bake") things that look the
+// same every frame into small hidden canvases (sprites) and just copy them.
+// (These functions replace the slower versions with the same names above.)
+// =====================================================================
+var PERF = { quality: "high", show: false, frameMs: 16.7, upd: 0, ren: 0, slowT: 0, manual: false };
+try { if (localStorage.getItem("animol.quality") === "low") { PERF.quality = "low"; PERF.manual = true; } } catch (e) {}
+var spriteCache = new Map(), glowCache = new Map(), gradCache = new Map(), txtCache = new Map(), rgbCache = new Map();
+var minimapCache = null, silCache = new Map(), causticPat = null, rayGrad = null, TXT_SCALE = 1;
+function LOW() { return !!PERF && PERF.quality === "low"; }
+
+// ---- 1. a smaller canvas: cap the pixel ratio and total pixels (fill cost grows with pixels)
+function resize() {
+  const low = LOW();
+  let dpr = Math.min(low ? 1 : 1.5, window.devicePixelRatio || 1);
+  const w = window.innerWidth, h = window.innerHeight, maxPx = low ? 1.6e6 : 3.7e6;
+  const k = Math.min(1, Math.sqrt(maxPx / Math.max(1, w * dpr * h * dpr)));
+  dpr *= k;
+  DPR = dpr;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  BW = canvas.width = Math.max(1, Math.round(w * dpr));
+  BH = canvas.height = Math.max(1, Math.round(h * dpr));
+  ZOOM = Math.min(BW / 1050, BH / 650);
+  UI = Math.min(BW / 1280, BH / 720);
+  VW = BW / UI; VH = BH / UI;
+  if (spriteCache) { spriteCache.clear(); txtCache.clear(); silCache.clear(); minimapCache = null; rayGrad = null; }
+}
+function setWorldTransform() {
+  const sx = cam.shake > 0 ? (Math.random() - 0.5) * cam.shake * 14 : 0, sy = cam.shake > 0 ? (Math.random() - 0.5) * cam.shake * 14 : 0;
+  ctx.setTransform(ZOOM, 0, 0, ZOOM, BW / 2 - cam.x * ZOOM + sx * DPR, BH / 2 - cam.y * ZOOM + sy * DPR);
+  TXT_SCALE = ZOOM;
+}
+function setUITransform() { ctx.setTransform(UI, 0, 0, UI, 0, 0); TXT_SCALE = UI; }
+
+// ---- 2. cached gradients (only ones in a creature's own small coordinates; those never change)
+function radial(g, x, y, r, stops, lx = -0.35, ly = -0.4) {
+  const cacheable = Math.abs(x) < 200 && Math.abs(y) < 200;
+  let key;
+  if (cacheable) {
+    key = x + "," + y + "," + r + "," + lx + "," + ly + "," + stops.join("|");
+    const c = gradCache.get(key); if (c) return c;
+  }
+  const gr = g.createRadialGradient(x + lx * r, y + ly * r, r * 0.08, x, y, r * 1.05);
+  for (let i = 0; i < stops.length; i++) gr.addColorStop(i / (stops.length - 1), stops[i]);
+  if (cacheable) { if (gradCache.size > 1500) gradCache.clear(); gradCache.set(key, gr); }
+  return gr;
+}
+// the body light direction is rounded to 64 steps so its gradient can be reused
+function drawBody(g, R, ang, L) {
+  const q = Math.round(((-ang % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI / 32)) * (Math.PI / 32);
+  const lx = Math.round((Math.cos(q) * -0.35 - Math.sin(q) * -0.42) * 100) / 100, ly = Math.round((Math.sin(q) * -0.35 + Math.cos(q) * -0.42) * 100) / 100;
+  const squash = 1 + Math.sin(L.t * 9) * 0.025 * (L.moving || 0);
+  g.save(); g.scale(squash, 1 / squash);
+  circle(g, 0, 0, R);
+  strokeFill(g, radial(g, 0, 0, R, COL.body, lx, ly), COL.line, 3);
+  g.fillStyle = "rgba(4,100,40,.28)";
+  g.beginPath(); g.arc(-9, 6, 3, 0, 6.3); g.moveTo(-1, 12); g.arc(-3, 12, 2.2, 0, 6.3); g.moveTo(-10.6, -4); g.arc(-13, -4, 2.4, 0, 6.3); g.moveTo(3.8, -13); g.arc(2, -13, 1.8, 0, 6.3); g.moveTo(-4.5, -10); g.arc(-6, -10, 1.5, 0, 6.3); g.fill();
+  g.beginPath(); g.ellipse(lx * R * 0.55, ly * R * 0.55, R * 0.32, R * 0.18, Math.atan2(ly, lx) + Math.PI / 2, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,.35)"; g.fill();
+  g.restore();
+}
+
+// ---- 3. glow sprites instead of shadowBlur / per-frame glow gradients
+function glowSprite(rgb) {
+  let c = glowCache.get(rgb); if (c) return c;
+  c = makeCanvas(64, 64); const g = c.getContext("2d");
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, `rgba(${rgb},1)`); gr.addColorStop(0.35, `rgba(${rgb},.45)`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  glowCache.set(rgb, c); return c;
+}
+function glowAt(g, x, y, r, rgb, a) {
+  const op = g.globalCompositeOperation, pa = g.globalAlpha;
+  g.globalCompositeOperation = "lighter"; g.globalAlpha = pa * a;
+  g.drawImage(glowSprite(rgb), x - r, y - r, r * 2, r * 2);
+  g.globalCompositeOperation = op; g.globalAlpha = pa;
+}
+function drawFeelers(g, R, L) {
+  for (const s of [-1, 1]) {
+    const tx = R + 18, ty = s * (R * 0.95 + 4 + Math.sin(L.t * 3 + s) * 3);
+    g.beginPath(); g.moveTo(R * 0.55, s * R * 0.72); g.quadraticCurveTo(R + 4, s * (R + 8), tx, ty);
+    g.lineWidth = 4; g.strokeStyle = COL.line; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#d9c24a"; g.stroke();
+    glowAt(g, tx, ty, 12, "255,242,122", 0.9);
+    circle(g, tx, ty, 3.6); g.fillStyle = "#fff59a"; g.fill();
+  }
+}
+function drawGlowSpots(g, R, L) {
+  if (LOW()) return;
+  [[-10, 7], [-4, -12], [-14, -3], [2, 13], [-8, -1], [6, -4]].forEach(([x, y], i) => glowAt(g, x, y, 5, "140,255,240", 0.9 * (0.55 + 0.45 * Math.sin(L.t * 3 + i))));
+}
+function drawAura(g, R, L) { if (!LOW()) glowAt(g, 0, 0, R + 24, "255,210,70", 0.45 * (0.6 + 0.4 * Math.sin(L.t * 4))); }
+function drawRegenGlow(g, R, L, lvl) { if (!LOW()) glowAt(g, 0, 0, R + 10, "90,255,140", 0.2 * lvl * (0.5 + 0.5 * Math.sin(L.t * 2.5))); }
+function drawPoison(g, R, L, lvl) {
+  for (const s of [-1, 1]) {
+    const y = s * 7, x = R + 10 + Math.sin(L.t * 3 + s) * 1.5, drip = (L.t * 1.2 + (s + 1) * 0.3) % 1;
+    glowAt(g, x, y + drip * 6 * s, 5 + lvl, "200,90,255", 0.8 - drip * 0.5);
+  }
+}
+function drawDeepJellies() {
+  if (LOW()) return;
+  const g = ctx, Z = W.Z, t = G.t;
+  for (const j of deepJellies) {
+    const x = j.x * Z.w + (cam.x - Z.w / 2) * 0.35, y = ((j.y * Z.h - t * 8 * j.s) % Z.h + Z.h) % Z.h + (cam.y - Z.h / 2) * 0.35;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 2 + j.p), r = 16 * j.s;
+    glowAt(g, x, y, r * 3, j.c, 0.3 * pulse);
+    g.save(); g.globalCompositeOperation = "lighter";
+    g.beginPath(); g.arc(x, y, r, Math.PI, 0); g.closePath(); g.globalAlpha = 0.35 * pulse; g.fillStyle = rgbStr(j.c); g.fill();
+    g.globalAlpha = 0.25 * pulse; g.strokeStyle = rgbStr(j.c); g.lineWidth = 2; g.beginPath();
+    for (let k = -2; k <= 2; k++) { g.moveTo(x + k * r * 0.35, y); g.quadraticCurveTo(x + k * r * 0.4 + Math.sin(t * 2 + k) * 5, y + r, x + k * r * 0.3, y + r * 2); }
+    g.stroke(); g.restore();
+  }
+}
+function drawDarkness() {
+  const g = ctx, p = worldToScreen(P.x, P.y), t = G.t;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const R = (300 + (RUN.stats.eat >= 2 ? 60 : 0)) * ZOOM;
+  const gr = g.createRadialGradient(p.x, p.y, R * 0.18, p.x, p.y, R);
+  gr.addColorStop(0, "rgba(0,2,12,0)"); gr.addColorStop(0.55, "rgba(0,2,12,.55)"); gr.addColorStop(1, "rgba(0,2,12,.94)");
+  g.fillStyle = gr; g.fillRect(0, 0, BW, BH);
+  for (const e of W.enemies) if (e.type === "angler") {
+    const lx = 30 + Math.sin(t * 2 + e.seed) * 4, ly = -30 + Math.cos(t * 1.7 + e.seed) * 3, c = Math.cos(e.ang), s = Math.sin(e.ang), sc = e.scale || 1;
+    const q = worldToScreen(e.x + (c * lx - s * ly) * sc, e.y + (s * lx + c * ly) * sc);
+    glowAt(g, q.x, q.y, 60 * ZOOM * sc * (0.85 + 0.15 * Math.sin(t * 4 + e.seed)), "255,245,140", 0.95);
+  }
+  for (const f of W.food) { const q = worldToScreen(f.x, f.y); if (q.x > -50 && q.y > -50 && q.x < BW + 50 && q.y < BH + 50) glowAt(g, q.x, q.y, 22 * ZOOM, f.sprite === "meat" ? "255,100,160" : "90,255,140", 0.45); }
+  g.restore();
+}
+
+// ---- 4. food is baked into sprites (drawn once per look, then copied)
+function foodSprite(f) {
+  const s = Math.max(1, Math.round(ZOOM * 2) / 2), key = f.sprite + f.v + "|" + s;
+  let c = spriteCache.get(key); if (c) return c;
+  c = makeCanvas(44 * s, 44 * s); const g = c.getContext("2d");
+  g.scale(s, s);
+  drawFoodBase(g, { sprite: f.sprite, v: f.v, x: 22, y: 22, rot: 0, age: 1, glow: false }, 0);
+  spriteCache.set(key, c); return c;
+}
+function drawFood(g, f, t) {
+  const pop = f.age < 0.35 ? easeOutBack(f.age / 0.35) : 1;
+  g.save(); g.translate(f.x, f.y); g.scale(pop, pop);
+  g.rotate(f.rot + Math.sin(t * 1.5 + f.x) * 0.08);
+  g.drawImage(foodSprite(f), -22, -22, 44, 44);
+  g.restore();
+}
+
+// ---- 5. particles: no new color strings every frame, capped and recycled in place
+function rgbStr(c) { let s = rgbCache.get(c); if (!s) { s = "rgb(" + c + ")"; rgbCache.set(c, s); } return s; }
+function drawParticles(g) {
+  const pa = g.globalAlpha;
+  for (const p of W.parts) {
+    const a = Math.max(0, p.life / p.max);
+    if (p.type === "dot") { g.globalAlpha = a; g.fillStyle = rgbStr(p.col); g.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); }
+    else if (p.type === "spark") { g.globalAlpha = a; g.strokeStyle = rgbStr(p.col); g.lineWidth = 2.5; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); g.stroke(); }
+    else if (p.type === "bubble") {
+      g.globalAlpha = Math.min(1, a * 1.5) * 0.75; circle(g, p.x, p.y, p.size); g.strokeStyle = "#dcf5ff"; g.lineWidth = 1.2; g.stroke();
+      g.globalAlpha = a * 0.8; g.fillStyle = "#fff"; g.fillRect(p.x - p.size * 0.55, p.y - p.size * 0.55, p.size * 0.5, p.size * 0.5);
+    } else if (p.type === "ring") {
+      g.globalAlpha = a * 0.9; circle(g, p.x, p.y, lerp(p.r, p.r1, 1 - a)); g.strokeStyle = rgbStr(p.col); g.lineWidth = 4 * a + 1; g.stroke();
+    }
+  }
+  g.globalAlpha = pa;
+}
+function tickParticles(dt) {
+  const ps = W.parts; let j = 0;
+  for (let i = 0; i < ps.length; i++) {
+    const p = ps[i];
+    p.life -= dt;
+    if (p.type === "bubble") { p.x += (p.vx + Math.sin(p.life * 6) * 12) * dt; p.y += p.vy * dt; }
+    else if (p.vx !== undefined) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92; }
+    if (p.life > 0) ps[j++] = p;
+  }
+  ps.length = j;
+  const cap = LOW() ? 160 : 450;
+  if (ps.length > cap) ps.splice(0, ps.length - cap);
+  const pp = W.popups; j = 0;
+  for (let i = 0; i < pp.length; i++) { const p = pp[i]; p.t -= dt; p.y -= 30 * dt; if (p.t > 0) pp[j++] = p; }
+  pp.length = j;
+  if (pp.length > 30) pp.splice(0, pp.length - 30);
+}
+function drawSnow() {
+  if (LOW()) return;
+  const g = ctx, Z = W.Z;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = Z.kind === "moon" ? "#dcdeeb" : Z.kind === "mars" ? "#ffaa78" : Z.kind === "land" ? "#fffadc" : Z.kind === "deep" ? "#96dcff" : "#e6faff";
+  const vy = Z.kind === "land" ? -4 : 10;
+  for (const s of W.snow) {
+    const x = ((s.x * BW - cam.x * ZOOM * s.d + G.t * 6 * DPR) % BW + BW) % BW;
+    const y = ((s.y * BH - cam.y * ZOOM * s.d + G.t * vy * DPR * s.d) % BH + BH) % BH;
+    g.globalAlpha = 0.12 + s.d * 0.3;
+    g.fillRect(x, y, s.s * DPR * s.d, s.s * DPR * s.d);
+  }
+  g.restore();
+}
+var shadowStr = {};
+function shadow(g, x, y, rx, ry, a = 0.22) {
+  const k = Math.round(a * 100);
+  g.fillStyle = shadowStr[k] || (shadowStr[k] = `rgba(0,10,30,${k / 100})`);
+  g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill();
+}
+
+// ---- 6. text is drawn once into a sprite and reused (text drawing is slow, glowing text even more)
+function txt(s, x, y, size, fill, opts = {}) {
+  s = String(s);
+  const sc = Math.max(0.5, Math.round(TXT_SCALE * 4) / 4);
+  const key = s + "|" + size + "|" + fill + "|" + (opts.stroke || "") + "|" + (opts.lw || "") + "|" + (opts.weight || 700) + "|" + (opts.glow || "") + "|" + (opts.blur || "") + "|" + sc;
+  let e = txtCache.get(key);
+  if (!e) {
+    const font = `${opts.weight || 700} ${size}px ${FONT}`;
+    ctx.font = font;
+    const w = ctx.measureText(s).width || s.length * size * 0.55;
+    const pad = (opts.stroke ? (opts.lw || size * 0.16) : 0) + (opts.glow ? (opts.blur || 18) * 1.6 : 0) + 4;
+    const cw = w + pad * 2, ch = size * 1.5 + pad * 2;
+    const c = makeCanvas(cw * sc, ch * sc), g = c.getContext("2d");
+    g.scale(sc, sc); g.font = font; g.textAlign = "center"; g.textBaseline = "middle";
+    if (opts.stroke) { g.lineJoin = "round"; g.lineWidth = opts.lw || size * 0.16; g.strokeStyle = opts.stroke; g.strokeText(s, cw / 2, ch / 2); }
+    if (opts.glow) { g.shadowColor = opts.glow; g.shadowBlur = (opts.blur || 18) * sc; }
+    g.fillStyle = fill; g.fillText(s, cw / 2, ch / 2);
+    e = { c, cw, ch, w };
+    if (txtCache.size > 500) txtCache.clear();
+    txtCache.set(key, e);
+  }
+  const align = opts.align || "center";
+  const cx = align === "left" ? x + e.w / 2 : align === "right" ? x - e.w / 2 : x;
+  ctx.drawImage(e.c, cx - e.cw / 2, y - e.ch / 2, e.cw, e.ch);
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (txtCache) txtCache.clear(); }).catch(() => {});
+
+// ---- 7. cached caustic pattern, god-ray gradient, minimap background, collection silhouettes
+function causticPattern(g) { if (!causticPat) causticPat = g.createPattern(getCaustics(), "repeat"); return causticPat; }
+function rayGradient(g) {
+  if (!rayGrad || rayGrad.h !== BH) { rayGrad = g.createLinearGradient(0, 0, 0, BH); rayGrad.addColorStop(0, "rgba(255,255,230,.06)"); rayGrad.addColorStop(1, "rgba(255,255,230,0)"); rayGrad.h = BH; }
+  return rayGrad;
+}
+function minimapBase(w, h) {
+  const s = UI, key = W.z + "|" + Math.round(w * s) + "|" + Math.round(h * s);
+  if (minimapCache && minimapCache.key === key) return minimapCache.c;
+  const c = makeCanvas(w * s, h * s), g = c.getContext("2d");
+  g.globalAlpha = 0.5; g.drawImage(W.floor.canvas, 0, 0, w * s, h * s);
+  minimapCache = { key, c };
+  return c;
+}
+function silhouette(type, title) {
+  const s = Math.max(1, Math.round(UI * 2) / 2), key = type + title + s;
+  let c = silCache.get(key); if (c) return c;
+  c = makeCanvas(180 * s, 180 * s); const g = c.getContext("2d");
+  g.scale(s, s);
+  drawCreature(g, 90, 90, -0.3, 1.25, creatureLook(type, FORM_STATS[title], { evolved: true, legs: true, helmet: true, moving: 0.4, walk: 1, t: 1 }));
+  g.globalCompositeOperation = "source-in"; g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, 0, 180, 180);
+  silCache.set(key, c); return c;
+}
+
+// ---- 8. FPS counter (F3) and automatic low-quality mode
+function setQuality(q, auto) {
+  PERF.quality = q; PERF.slowT = 0; PERF.manual = !auto;
+  try { localStorage.setItem("animol.quality", q); } catch (e) {}
+  resize();
+  if (q === "low" && W) W.parts.length = Math.min(W.parts.length, 160);
+  toast(auto ? "Switched to low quality (the game was lagging)" : "Quality: " + q.toUpperCase(), auto ? "Press F4 to switch back" : null, 3);
+}
+window.addEventListener("keydown", e => {
+  if (e.code === "F3") { PERF.show = !PERF.show; e.preventDefault(); }
+  if (e.code === "F4") { setQuality(LOW() ? "high" : "low", false); e.preventDefault(); }
+});
+function perfSample(dtms, u, r) {
+  if (dtms > 0 && dtms < 100) PERF.frameMs += (dtms - PERF.frameMs) * 0.05;
+  PERF.upd += (u - PERF.upd) * 0.05; PERF.ren += (r - PERF.ren) * 0.05;
+  if (G.scene === "play" && !G.paused && !G.fadeDir && !LOW() && !PERF.manual && dtms > 0 && dtms < 100) {
+    if (PERF.frameMs > 20) PERF.slowT += dtms / 1000; else PERF.slowT = Math.max(0, PERF.slowT - dtms / 2000);
+    if (PERF.slowT > 3) setQuality("low", true);
+  }
+}
+function drawPerf() {
+  setUITransform();
+  const fps = 1000 / Math.max(1, PERF.frameMs);
+  panel(VW - 210, 122, 190, 104, { r: 14, fill: "rgba(0,0,0,.7)" });
+  txt(`${fps.toFixed(0)} FPS  (${PERF.frameMs.toFixed(1)} ms)`, VW - 198, 140, 15, fps > 50 ? "#7dffa0" : fps > 30 ? "#ffe066" : "#ff6b6b", { align: "left" });
+  txt(`update ${PERF.upd.toFixed(2)} ms`, VW - 198, 162, 13, "#cfe7ff", { align: "left", weight: 500 });
+  txt(`draw ${PERF.ren.toFixed(2)} ms`, VW - 198, 180, 13, "#cfe7ff", { align: "left", weight: 500 });
+  txt(`${BW}x${BH}  ${PERF.quality}  ${W ? W.parts.length : 0}p`, VW - 198, 198, 13, "#cfe7ff", { align: "left", weight: 500 });
+  txt("F3 hide  ·  F4 quality", VW - 198, 214, 11, "#8aa", { align: "left", weight: 500 });
+}
+function draw() {
+  drawFrame();
+  if (PERF.show) drawPerf();
+}
+function frame(now) {
+  const dtms = now - last;
+  acc += Math.min(0.1, dtms / 1000 || 0);
+  last = now;
+  const t0 = performance.now();
+  let steps = 0;
+  while (acc >= DT && steps < 6) { tick(DT); acc -= DT; steps++; }   // never more than 6 catch-up steps (avoids a slow-down spiral)
+  if (steps >= 6) acc = 0;
+  const t1 = performance.now();
+  draw();
+  perfSample(dtms, t1 - t0, performance.now() - t1);
+  requestAnimationFrame(frame);
+}
+resize();
 
 </script>
 </body>
