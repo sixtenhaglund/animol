@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>animol</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; touch-action: none; }
+  canvas { display: block; cursor: default; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script>
+"use strict";
+/* =====================================================================
+   animol - remade from Sixten's Scratch game (Scratch id 1056116422)
+
+   How the code is laid out:
+   1. DATA      - his costumes/sounds, and every animation from his blocks
+   2. ENGINE    - loading, a tiny Scratch-like sprite drawer, sound, input
+   3. GAME      - the scenes: flag -> menu -> choose -> play -> levelup -> play (lvl 2) -> end
+   4. DRAW      - everything that paints a frame
+   The stage is 480x360 like Scratch, with (0,0) in the middle and y going UP.
+   ===================================================================== */
+
+// ---------------------------------------------------------------- 1. DATA
+// [costume name, asset md5, rotationCenterX, rotationCenterY] (bitmapResolution 2 for all)
+const COSTUMES={
+  "stars":[["klädsel1","e9e57b5741665f26c936ba3a9c63fc87",102,29],["klädsel2","7749f0813fac54a7f092eb23ab06031a",102,29],["klädsel3","524a8d93582b57efb69956592c9cbcb6",102,32],["klädsel4","b40cbe0694131414278bb579f94bcbc3",102,29]],
+  "sign":[["klädsel1","061bf9ddc2d3d1138b5c507a4fa70e00",81,23]],
+  "earth":[["klädsel1","80985623d09e82fac7f649bcc955c57e",12,15]],
+  "mars":[["klädsel1","e749bb6e05c8d064dad7958847143671",11,11]],
+  "moon":[["klädsel1","847cfbffcac24491c2ed26d99ab23dad",12,8]],
+  "sun":[["klädsel1","e4045876834262cf450f6a737bb05fc1",19,26]],
+  "play":[["klädsel2","866194c89bf2b5bcb1f3542a27c8318a",63,33]],
+  "meat eater":[["normal meat","488e86f3df60ba35bac0a21a3a76350c",10,10],["eat1 meat","4227611836e7c4e53e48dd42d0fc51ed",10,10],["eat2 meat","cd82eff1902be5207aa0141fc176145b",10,10],["bite1 meat","4a5a47dfbbfa9b86deb72aba0e9ada1b",10,10],["bite2 meat","41b9822f4d3b2fc1bb9041ec2b01daa3",10,10],["bite3 meat","8bff2b17f206b2ef275629065a17de00",10,10],["bite4 meat","b6ba3af8169bb615e732c97471fef358",10,10],["meat eater upg 2 eat","2df4944b82880ca6f8da6767d485a768",16,10],["meat eater upg 2 eat2","52576b5393c44e4bb76aed67c0989764",16,10],["meat eater upg 2 eat3","cf6b8fb1d98d2ed036ba60991f661edf",16,10],["meat eater upg 2 eat bite1","0ffd85513a43ddae3cd4fcba16ff2bfb",16,10],["meat eater upg 2 eat bite2","c7dad7477e6ee9da0286341554517219",16,10],["meat eater upg 2 eat bite3","2cc757f37178d70d1911922fc433a82a",16,19],["meat eater upg 2 eat bite4","7ddc53fddd4e41d1f8b6080794832413",16,14],["meat eater upg 2 attack","e16ec5293e426b2f77c8aeb706b149e8",16,14],["meat eater upg 2 attack eat1","c1865c8c657a050f340258e2fbcd3039",16,14],["meat eater upg 2 attack eat2","02de57480570cc926fd20091d3e12aef",16,14],["meat eater upg 2 attack2","b9bf23217123f11e5df28ce3eae1de64",16,15],["meat eater upg 2 attack3","3413375256d871cd8197603b5738486e",16,16],["meat eater upg 2 attack1","d07e0394e92659845baa7729a181eb82",16,16],["meat eater upg 2 attack4","c5bdc98bd216283eb526fe2c736c11ce",16,15],["meat eater upg 2 defence","0cadd15dc74fe4ba613af8f3fb724a26",16,12],["meat eater upg 2 defence2","083ffbc9aeb2bbf28e21b84aa7d05218",16,12],["meat eater upg 2 defence3","fe17d83630db3ac00fae899652ebce4a",16,12],["meat eater upg 2 defence bite1","adef1107f53508fe29b68a44d2e4ad10",16,12],["meat eater upg 2 defence bite2","8a8f2eda6c57936d1bb24dce04515da2",16,12],["meat eater upg 2 defence bite3","144195a107fe03773858d5194c5b2bcd",16,12]],
+  "meat chooser":[["klädsel1","488e86f3df60ba35bac0a21a3a76350c",10,10]],
+  "plant chooser":[["klädsel1","65fa1f7200c8980e2e9ada467447e727",10,9]],
+  "plant eater":[["normal plant","65fa1f7200c8980e2e9ada467447e727",10,9],["eat1 plant","0190401c1230c1dbb7af0541d12af7c0",10,9],["eat2 plant","dde17befd4534ab0fc38a21bff3663bc",10,9],["eat3 plant","c41af6f0af6356c15c506722179e85b2",10,9],["swing1","3d348ec869fcb353ac2ca637dc229f5b",10,18],["swing2","5a2f579d34e45c6b9ecd9cd904b20a72",10,11],["swing3","9831c767b2476b2ba1e7f6af168f11f6",10,10],["swing4","7b88f77b92d1d5a3fe3f83670d3aac18",10,9],["swing5","d7e5c6a058f161cdb9dc7ae37354dadd",10,9],["swing6","10edfb7bbfb9d16267517214315ec9f7",10,9],["plant eater upg 2 eat normal","9a0aa21de2e8bc715ae9d038355a8b2c",16,21],["plant eater upg 2 eat1","4fbab9cd2228c63bcc4b76b8cefdb747",16,21],["plant eater upg 2 eat2","9db32769fe415a9ed23c022c2f42f4cf",16,21],["plant eater upg 2 eat3","abc7dcaeea5dc92622ffe962024b6423",16,21],["plant eater upg 2 eat normal2","e187e8e6fdd55b05b5e3236fa034a905",16,28],["plant eater upg 2 eat normal3","0ac72cad8f9b90fc14301c08f23a74bf",16,29],["plant eater upg 2 eat normal5","1f58d3d95b1e175eebcbd3c0b15d5014",16,27],["plant eater upg 2 eat normal4","2f8e6051a8f621b0c9dcaba8c351f65d",16,23],["plant eater upg 2 eat normal6","8a9548a945a8af88653fedfec957a207",16,22],["plant eater upg 2 eat normal7","9a0aa21de2e8bc715ae9d038355a8b2c",16,21],["plant eater upg 2 attack","37c0a87cf7d66ddaa0bf38fe1a2aae2c",16,13],["plant eater upg 2 attack2","a755aa6112e303c6d58b54cccdd0d83f",16,13],["plant eater upg 2 attack3","7aecc6bb05a2bc1aebdb69b00ae82ff6",16,13],["plant eater upg 2 attack4","c3a1e3afe01dd503945d3e73fce304c8",16,13],["plant eater upg 2 attack5","bbfa597d97d51ca8071e2b1aafbe1601",16,14],["plant eater upg 2 attack6","5f40effce0d33d14898f9eab7741c6ac",16,15],["plant eater upg 2 attack7","845b737e2d4dc893f5ca9d8604d51c93",16,15],["plant eater upg 2 attack8","a535954a8fdadaf58221dad2538ac559",16,13],["plant eater upg 2 attack9","9f8098986646bcb04610edc81d4fd081",16,12],["plant eater upg 2 defence","1ba55a8de3e20031174755ce74edc8be",17,12],["plant eater upg 2 defence2","344103c31c62b6fbe2ce31a089a9a442",17,12],["plant eater upg 2 defence3","96553204157feaec63c86a7a5bd189aa",17,12],["plant eater upg 2 defence4","3e799f1e552f8b65405407e3259c5979",17,12],["plant eater upg 2 defence5","2e087c26ed7f0299af257ca1bb8c2ea9",20,12],["plant eater upg 2 defence6","37427be8edcbcc3c662219e4afb9d170",22,12],["plant eater upg 2 defence7","307ab77ee83fd40edc2f99aa0f29f8c1",22,12]],
+  "plant":[["seagrass","c36dbdc848f5645f7673e6d6498101ef",21,13],["tong","2e72eb35e19de1ef63ae145525748e9d",22,13],["mussle","39620e05c58329be33c79a4f2894bb85",9,9]],
+  "meat":[["klädsel1","048c3544f58e5528a73351c30b346923",11,10],["klädsel2","12eeeb4dab5024cb5ffe76ec8b4ffa07",11,10],["klädsel3","accf3d175ff5683788840e10b8541e90",11,10]],
+  "Sprajt1":[["klädsel1","b19640ac811409f7be082beac33a7c70",480,28]],
+  "Sprajt3":[["klädsel1","a9656f4ad0a1590e5fa3257c430350b3",480,35]],
+  "Sprajt4":[["klädsel1","a9a0d149b45749a38fa70578c25be6c3",376,79]],
+  "plant chooser upg 2 eat":[["klädsel1","9a0aa21de2e8bc715ae9d038355a8b2c",16,21]],
+  "plant chooser upg 3 attack":[["klädsel1","37c0a87cf7d66ddaa0bf38fe1a2aae2c",16,13]],
+  "plant chooser upg 2 defence":[["klädsel1","1ba55a8de3e20031174755ce74edc8be",17,12]],
+  "meat chooser upg 2 eat":[["klädsel1","8ce79bafef45ec37457952db4087ad8e",16,10]],
+  "meat chooser upg 2 attack":[["klädsel1","e16ec5293e426b2f77c8aeb706b149e8",16,14]],
+  "meat chooser upg 2 defence":[["klädsel1","0cadd15dc74fe4ba613af8f3fb724a26",16,12]],
+  "Sprajt5":[["klädsel1","2e759cea762372a580685732f65fe25a",6,15],["klädsel2","d9b9695647c5311ee7f228cce65c115a",6,15]],
+};
+
+
+const BACKDROPS = {
+  bakgrund1: "38b1374bdf8cf1b105c406161a56f1f7", // black menu
+  bakgrund2: "cf5b270d49cd7deecb9593a2ec808997", // ocean (level 1)
+  bakgrund4: "cf5b270d49cd7deecb9593a2ec808997", // ocean (level 2)
+  Stars:     "47282ff0f7047c6fab9c94b531abf721", // chooser screen
+  Stars2:    "47282ff0f7047c6fab9c94b531abf721", // level-up screen
+};
+
+const SOUNDS = {
+  "Space Ambience":  "6c38602459955e831c06dfd3ae15b611", // menu music (play sprite)
+  "Chill":           "c4e9e84fd9244ca43986c2bdb6669ae8", // after-menu music (eftermenymusik)
+  "Elec Piano Loop": "7b4822ccca655db47de0880bab0e7bd9", // game music (spelmusik)
+  "Techno":          "8700dac70c8e08f4a5d21411980304bb", // level 2 music
+  "Triumph":         "072f4d9a3dfd2a082d50ff90ac7dc8f2", // LEVEL UP!
+  "Win":             "db480f6d5ae6d494dbb76ffb9bd995d5",
+  "Bite":            "965be693b97c30305b9a4150d96f7816",
+  "Snap":            "e3b224967a2dc06df00eb5fc49df9234",
+  "Low Whoosh":      "a10243da494cd4eaaf10c76a7e91a545", // meat eater's whoosh
+  "Plant Whoosh":    "f2479357fc7cbafa6709d1fff721c9ce", // plant eater's "Low Whoosh"
+  "Low Whoosh2":     "d092fa57d7b0765d30537a30a077e2f8",
+  "Rip":             "a358f845e04f41841f8bde6f599b46d6",
+  "pop":             "83a9787d4cb6f3b7632b4ddfebf74367",
+};
+
+// Every creature form (his variable "utveclad speltyp") with the exact
+// animations from his blocks. A step is [costume, seconds, sound-to-play-at-start].
+const FORMS = {
+  "normal meat": {
+    sprite: "meat eater", base: "normal meat", gain: 1, label: "MEAT EATER", attackName: "BITE",
+    eat:    [["eat1 meat", .1], ["eat2 meat", .1, "Bite"]],
+    attack: [["bite1 meat", .1], ["bite2 meat", .1], ["bite3 meat", .1, "Snap"], ["bite4 meat", .1]],
+  },
+  "meat eater upg 2 eat": {
+    sprite: "meat eater", base: "meat eater upg 2 eat", gain: 2, label: "MEAT EATER - EAT", attackName: "BITE",
+    eat:    [["meat eater upg 2 eat2", .1], ["meat eater upg 2 eat3", .1, "Bite"]],
+    attack: [["meat eater upg 2 eat bite1", .1], ["meat eater upg 2 eat bite2", .1],
+             ["meat eater upg 2 eat bite3", .1, "Snap"], ["meat eater upg 2 eat bite4", .1]],
+  },
+  "meat eater upg 2 attack": {
+    sprite: "meat eater", base: "meat eater upg 2 attack", gain: 1, label: "MEAT EATER - ATTACK", attackName: "SLASH",
+    eat:    [["meat eater upg 2 attack eat1", .1], ["meat eater upg 2 attack eat2", .1, "Bite"]],
+    attack: [["meat eater upg 2 attack2", .1], ["meat eater upg 2 attack3", .1],
+             ["meat eater upg 2 attack1", .1, "Low Whoosh"], ["meat eater upg 2 attack4", .1]],
+  },
+  "meat eater upg 2 defence": {
+    sprite: "meat eater", base: "meat eater upg 2 defence", gain: 1, label: "MEAT EATER - DEFENCE", attackName: "BITE",
+    eat:    [["meat eater upg 2 defence2", .1], ["meat eater upg 2 defence3", .1, "Bite"]],
+    attack: [["meat eater upg 2 defence bite1", .1], ["meat eater upg 2 defence bite2", .1],
+             ["meat eater upg 2 defence bite3", .1, "Snap"]],
+  },
+  "normal plant": {
+    sprite: "plant eater", base: "normal plant", gain: 1, label: "PLANT EATER", attackName: "SWING",
+    eat:    [["eat1 plant", .1], ["eat2 plant", .1, "Rip"], ["eat3 plant", .1]],
+    attack: [["swing1", .5], ["swing2", .1], ["swing3", .1, "Plant Whoosh"], ["swing4", .1], ["swing5", .1]],
+  },
+  "plant eater upg 2 eat normal": {
+    sprite: "plant eater", base: "plant eater upg 2 eat normal", gain: 2, label: "PLANT EATER - EAT", attackName: "SWING",
+    eat:    [["plant eater upg 2 eat1", .1], ["plant eater upg 2 eat2", .1, "Rip"], ["plant eater upg 2 eat3", .1]],
+    attack: [["plant eater upg 2 eat normal2", .1], ["plant eater upg 2 eat normal3", .1],
+             ["plant eater upg 2 eat normal5", .1], ["plant eater upg 2 eat normal4", .1, "Plant Whoosh"],
+             ["plant eater upg 2 eat normal6", .1], ["plant eater upg 2 eat normal7", .1]],
+  },
+  "plant eater upg 2 attack": {
+    sprite: "plant eater", base: "plant eater upg 2 attack", gain: 1, label: "PLANT EATER - ATTACK", attackName: "SWING",
+    eat:    [["plant eater upg 2 attack2", .1], ["plant eater upg 2 attack2", .1, "Rip"], ["plant eater upg 2 attack3", .1]],
+    attack: [["plant eater upg 2 attack5", .5], ["plant eater upg 2 attack6", .1],
+             ["plant eater upg 2 attack7", .1, "Plant Whoosh"], ["plant eater upg 2 attack8", .1],
+             ["plant eater upg 2 attack9", .1]],
+  },
+  "plant eater upg 2 defence": {
+    sprite: "plant eater", base: "plant eater upg 2 defence", gain: 1, label: "PLANT EATER - DEFENCE", attackName: "SPIKES",
+    eat:    [["plant eater upg 2 defence2", .1], ["plant eater upg 2 defence3", .1, "Rip"], ["plant eater upg 2 defence4", .1]],
+    attack: [["plant eater upg 2 defence", .1], ["plant eater upg 2 defence5", .1], ["plant eater upg 2 defence6", .1],
+             ["plant eater upg 2 defence7", .1, "Low Whoosh2"]],
+  },
+};
+const FINAL_FORMS = Object.keys(FORMS).filter(k => k.includes("upg"));
+
+// The three level-2 choices for each player type (positions from his chooser sprites)
+const UPGRADES = {
+  meat: [
+    { kind: "attack",  sprite: "meat chooser upg 2 attack",  x: -155, form: "meat eater upg 2 attack" },
+    { kind: "eat",     sprite: "meat chooser upg 2 eat",     x: 0,    form: "meat eater upg 2 eat" },
+    { kind: "defence", sprite: "meat chooser upg 2 defence", x: 155,  form: "meat eater upg 2 defence" },
+  ],
+  plant: [
+    { kind: "attack",  sprite: "plant chooser upg 3 attack",  x: -155, form: "plant eater upg 2 attack" },
+    { kind: "eat",     sprite: "plant chooser upg 2 eat",     x: 0,    form: "plant eater upg 2 eat normal" },
+    { kind: "defence", sprite: "plant chooser upg 2 defence", x: 155,  form: "plant eater upg 2 defence" },
+  ],
+};
+
+const GOAL = { 1: 50, 2: 65 };   // his checks: levelmätare > 49 (level 1) and > 64 (level 2)
+const STEP = 1 / 30;             // Scratch runs at 30 ticks per second, so we do too
+const BLUE = "#0a2cff";          // the blue of his ANIMOL / PLAY / LEVEL UP! letters
+
+// ---------------------------------------------------------------- 2. ENGINE
+const canvas = document.getElementById("stage");
+const ctx = canvas.getContext("2d");
+let viewScale = 1;                       // backing pixels per stage unit
+
+const COST = {};                         // COST[sprite][costumeName] = {img, cx, cy}
+const BACK = {};                         // BACK[name] = img
+let toLoad = 0, loaded = 0;
+
+function loadImage(md5) {
+  const img = new Image();
+  toLoad++;
+  img.onload = img.onerror = () => { loaded++; };
+  img.src = "assets/" + md5 + ".png";
+  return img;
+}
+const imgCache = {};
+function img(md5) { return imgCache[md5] || (imgCache[md5] = loadImage(md5)); }
+for (const sprite in COSTUMES) {
+  COST[sprite] = {};
+  COSTUMES[sprite].forEach(([name, md5, cx, cy], i) => { COST[sprite][name] = COST[sprite][i] = { img: img(md5), cx, cy }; });
+}
+for (const b in BACKDROPS) BACK[b] = img(BACKDROPS[b]);
+
+function resize() {
+  const k = Math.min(window.innerWidth / 480, window.innerHeight / 360);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = Math.floor(480 * k) + "px";
+  canvas.style.height = Math.floor(360 * k) + "px";
+  canvas.width = Math.round(480 * k * dpr);
+  canvas.height = Math.round(360 * k * dpr);
+  viewScale = canvas.width / 480;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// Scratch-style drawing: (x, y) is where the costume's rotation center goes,
+// size is a percent like the "set size to" block, dir is Scratch direction (90 = right).
+function drawCostume(c, x, y, size, dir = 90, alpha = 1) {
+  if (!c || !c.img.width) return;
+  const s = size / 100 / 2;              // /2 because his PNGs are bitmapResolution 2
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.translate(x, -y);
+  if (dir !== 90) ctx.rotate((dir - 90) * Math.PI / 180);
+  ctx.drawImage(c.img, -c.cx * s, -c.cy * s, c.img.width * s, c.img.height * s);
+  ctx.restore();
+}
+// Bounding box (stage coords, y up) of an unrotated costume, for clicks
+function costumeBox(c, x, y, size) {
+  const s = size / 100 / 2;
+  const left = x - c.cx * s, top = y + c.cy * s;
+  return { left, right: left + c.img.width * s, top, bottom: top - c.img.height * s };
+}
+// Rough "radius" of a costume, used for touching checks
+function costumeRadius(c, size) {
+  const s = size / 100 / 2;
+  return Math.min(c.img.width, c.img.height) * s * 0.42;
+}
+
+// ---- tiny 5x7 pixel font so text matches his blocky letters
+const FONT = {
+  A:[14,17,17,31,17,17,17],B:[30,17,17,30,17,17,30],C:[14,17,16,16,16,17,14],D:[30,17,17,17,17,17,30],
+  E:[31,16,16,30,16,16,31],F:[31,16,16,30,16,16,16],G:[14,17,16,23,17,17,15],H:[17,17,17,31,17,17,17],
+  I:[14,4,4,4,4,4,14],J:[7,2,2,2,2,18,12],K:[17,18,20,24,20,18,17],L:[16,16,16,16,16,16,31],
+  M:[17,27,21,21,17,17,17],N:[17,17,25,21,19,17,17],O:[14,17,17,17,17,17,14],P:[30,17,17,30,16,16,16],
+  Q:[14,17,17,17,21,18,13],R:[30,17,17,30,20,18,17],S:[15,16,16,14,1,1,30],T:[31,4,4,4,4,4,4],
+  U:[17,17,17,17,17,17,14],V:[17,17,17,17,17,10,4],W:[17,17,17,21,21,21,10],X:[17,17,10,4,10,17,17],
+  Y:[17,17,10,4,4,4,4],Z:[31,1,2,4,8,16,31],
+  0:[14,17,19,21,25,17,14],1:[4,12,4,4,4,4,14],2:[14,17,1,2,4,8,31],3:[31,2,4,2,1,17,14],
+  4:[2,6,10,18,31,2,2],5:[31,16,30,1,1,17,14],6:[6,8,16,30,17,17,14],7:[31,1,2,4,8,8,8],
+  8:[14,17,17,14,17,17,14],9:[14,17,17,15,1,2,12],
+  " ":[0,0,0,0,0,0,0],"!":[4,4,4,4,4,0,4],"/":[1,1,2,4,8,16,16],":":[0,12,12,0,12,12,0],
+  ".":[0,0,0,0,0,12,12],"+":[0,4,4,31,4,4,0],"-":[0,0,0,31,0,0,0],"=":[0,0,31,0,31,0,0],"?":[14,17,1,2,4,0,4],
+};
+function textWidth(str, px) { return str.length * 6 * px - px; }
+// align: 0 = left, 0.5 = center, 1 = right. (x, y) is the top edge in stage coords.
+function pixelText(str, x, y, px, color, align = 0.5, shadow = "rgba(0,0,0,.55)") {
+  str = String(str).toUpperCase();
+  const x0 = x - textWidth(str, px) * align;
+  const pass = (ox, oy, col) => {
+    ctx.fillStyle = col;
+    for (let i = 0; i < str.length; i++) {
+      const g = FONT[str[i]] || FONT["?"];
+      for (let r = 0; r < 7; r++) for (let b = 0; b < 5; b++)
+        if (g[r] & (16 >> b)) ctx.fillRect(x0 + (i * 6 + b) * px + ox, -y + r * px + oy, px, px);
+    }
+  };
+  if (shadow) pass(px * 0.5, px * 0.5, shadow);
+  pass(0, 0, color);
+}
+
+// ---- sound: plain <audio> elements, so it also works when index.html is opened straight from disk
+const AUD = {};
+for (const n in SOUNDS) { const a = new Audio("assets/" + SOUNDS[n] + ".wav"); a.preload = "auto"; AUD[n] = a; }
+let muted = false, musicEl = null, musicName = null;
+const playing = new Set();
+function sfx(name, vol = 1) {
+  if (muted || !AUD[name]) return;
+  const a = AUD[name].cloneNode();
+  a.volume = vol;
+  playing.add(a);
+  a.onended = () => playing.delete(a);
+  const p = a.play(); if (p && p.catch) p.catch(() => {});
+}
+function music(name, vol = 0.6) {
+  if (musicEl) { musicEl.pause(); musicEl = null; }
+  musicName = name;
+  if (!name || muted) return;
+  musicEl = AUD[name].cloneNode();
+  musicEl.loop = true;                    // = his "forever: play sound until done"
+  musicEl.volume = vol;
+  const p = musicEl.play(); if (p && p.catch) p.catch(() => {});
+}
+function stopAllSounds() {               // = Scratch "stop all sounds"
+  music(null);
+  for (const a of playing) a.pause();
+  playing.clear();
+}
+function toggleMute() {
+  muted = !muted;
+  if (muted) { const keep = musicName; stopAllSounds(); musicName = keep; }
+  else if (musicName) music(musicName);
+  try { localStorage.setItem("animol.muted", muted ? "1" : "0"); } catch (e) {}
+}
+try { muted = localStorage.getItem("animol.muted") === "1"; } catch (e) {}
+
+// ---- saving (best times + which final forms you've found)
+let save = { best: {}, found: [] };
+try { const s = JSON.parse(localStorage.getItem("animol.save")); if (s && s.best && s.found) save = s; } catch (e) {}
+function writeSave() { try { localStorage.setItem("animol.save", JSON.stringify(save)); } catch (e) {} }
+
+// ---- input
+const mouse = { x: 0, y: 0, down: false };
+let isTouch = false;
+function stagePoint(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: Math.max(-240, Math.min(240, (e.clientX - r.left) / r.width * 480 - 240)),
+    y: Math.max(-180, Math.min(180, 180 - (e.clientY - r.top) / r.height * 360)),
+  };
+}
+function inEButton(p) { return isTouch && G.scene === "play" && Math.hypot(p.x - 200, p.y + 120) < 26; }
+canvas.addEventListener("pointermove", e => {
+  const p = stagePoint(e);
+  if (e.pointerType === "touch" && inEButton(p)) return;
+  mouse.x = p.x; mouse.y = p.y;
+});
+canvas.addEventListener("pointerdown", e => {
+  if (e.pointerType === "touch") isTouch = true;
+  const p = stagePoint(e);
+  if (inEButton(p)) { pressE(); return; }
+  mouse.x = p.x; mouse.y = p.y;
+  click(p.x, p.y);
+});
+window.addEventListener("keydown", e => {
+  if (e.repeat) return;
+  if (e.code === "KeyE" || e.code === "Space") { pressE(); e.preventDefault(); }
+  if (e.code === "KeyM") toggleMute();
+});
+
+// ---------------------------------------------------------------- 3. GAME
+const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));  // Scratch "pick random" with whole numbers
+const G = {
+  scene: "loading", t: 0,
+  backdrop: "bakgrund1",
+  spelartyp: "meat",                   // "meat" or "plant"
+  utveclad: "normal meat",             // utveclad speltyp: which creature form you are
+  level: 1,
+  levelmätare: 0,                      // the level meter
+  barShown: 0,                         // smoothed meter for the bar
+  player: null, food: [], popups: [], critter: null,
+  planets: [], starCostume: 3, starTimer: 1,
+  levelUpT: 0, playTime: 0, endInfo: null, hintT: 0,
+  hover: null,
+};
+
+// --- flag screen (the green flag: browsers only allow sound after a click)
+function toFlag() { G.scene = "flag"; G.backdrop = "bakgrund1"; }
+
+// --- main menu: his planets wobble around ANIMOL / PLAY
+function planetScript(name, x, y, size, waits, steps) {
+  return { name, x, y, homeX: x, size, waits, steps, phase: 0, timer: waits[0](), drawX: x };
+}
+function startMenu() {
+  stopAllSounds();
+  G.scene = "menu"; G.backdrop = "bakgrund1";
+  G.planets = [
+    // each: forever { wait A; move +steps; wait B; move -steps } (his exact waits)
+    planetScript("sun",   -260, -163, 1000, [() => 2, () => 1],              5 * -1),
+    planetScript("mars",  -166,  140,  700, [() => rand(1, 3), () => rand(1, 2)], 15),
+    planetScript("moon",   131,  139,  600, [() => 1, () => 1],              -10),
+    planetScript("earth",  188, -142, 1000, [() => rand(0, 3), () => rand(1, 3)], 10),
+  ];
+  G.starCostume = 3; G.starTimer = rand(1, 3);
+  music("Space Ambience", 0.7);
+}
+function tickMenu() {
+  for (const p of G.planets) {
+    p.timer -= STEP;
+    if (p.timer <= 0) {
+      p.phase ^= 1;
+      p.x = p.homeX + (p.phase ? p.steps : 0);
+      p.timer = p.waits[p.phase]();
+    }
+    p.drawX += (p.x - p.drawX) * 0.18;     // glide instead of Scratch's jump
+  }
+  G.starTimer -= STEP;
+  if (G.starTimer <= 0) { G.starCostume = (G.starCostume + 1) % 4; G.starTimer = rand(1, 3); }
+}
+
+// --- choose meat eater or plant eater (broadcast meddelande1)
+function startChoose() {
+  stopAllSounds();
+  sfx("pop");
+  G.scene = "choose"; G.backdrop = "Stars";
+  music("Chill", 0.6);
+}
+const CHOOSERS = [
+  { type: "meat",  sprite: "meat chooser",  x: -123, y: -15, label: "MEAT EATER" },
+  { type: "plant", sprite: "plant chooser", x:  106, y: -15, label: "PLANT EATER" },
+];
+
+// --- playing a level
+function startLevel(n) {
+  stopAllSounds();
+  G.scene = "play"; G.level = n;
+  G.backdrop = n === 1 ? "bakgrund2" : "bakgrund4";
+  G.levelmätare = 0; G.barShown = 0;
+  const f = FORMS[G.utveclad];
+  G.player = { x: 0, y: 0, dir: G.player && n === 2 ? G.player.dir : 90, costume: f.base,
+               anim: null, animKind: null, moveDelay: n === 1 ? 2 : 0 };
+  G.food = []; G.popups = [];
+  G.spawnTimer = rand(1, 5);
+  G.critter = { x: rand(-200, 200), y: rand(-120, 150), fx: 0, fy: 0, tx: 0, ty: 0, t: 0, dur: 3, costume: 0, ct: 0 };
+  G.critter.fx = G.critter.tx = G.critter.x; G.critter.fy = G.critter.ty = G.critter.y;
+  G.hintT = 5;
+  if (n === 1) G.playTime = 0;
+  music(n === 1 ? "Elec Piano Loop" : "Techno", 0.5);
+}
+function startAnim(kind) {
+  const f = FORMS[G.utveclad], p = G.player;
+  p.anim = { steps: f[kind], i: -1, t: 0 }; p.animKind = kind;
+  nextAnimStep();
+}
+function nextAnimStep() {
+  const p = G.player, a = p.anim;
+  a.i++;
+  if (a.i >= a.steps.length) { p.anim = null; p.animKind = null; p.costume = FORMS[G.utveclad].base; return; }
+  const [c, secs, snd] = a.steps[a.i];
+  p.costume = c; a.t = secs;
+  if (snd) sfx(snd);
+}
+function pressE() {
+  // like his "when e key pressed": does nothing if you are already mid-attack
+  if (G.scene !== "play" || !G.player || G.player.animKind === "attack") return;
+  startAnim("attack");
+}
+function spawnFood() {
+  const sprite = G.spelartyp === "meat" ? "meat" : "plant";
+  if (G.food.length >= 40) return;
+  // his clones did "go to random position"; we keep them off the level bar and fully on screen
+  G.food.push({ sprite, costume: rand(0, 2), x: rand(-215, 215), y: rand(-128, 160),
+                size: sprite === "meat" ? 300 : 500, age: 0, dir: 90 });
+}
+function tickPlay() {
+  const p = G.player, f = FORMS[G.utveclad];
+  G.playTime += STEP;
+  if (G.hintT > 0) G.hintT -= STEP;
+
+  // animation player
+  if (p.anim) { p.anim.t -= STEP; if (p.anim.t <= 0) nextAnimStep(); }
+
+  // his movement: if distance to mouse > 40 { point towards mouse; move 5 steps }
+  const dx = mouse.x - p.x, dy = mouse.y - p.y;
+  if (Math.hypot(dx, dy) > 40) {
+    p.dir = 90 - Math.atan2(dy, dx) * 180 / Math.PI;
+    if (p.moveDelay <= 0) {
+      const r = (p.dir) * Math.PI / 180;
+      p.x += 5 * Math.sin(r); p.y += 5 * Math.cos(r);
+      p.x = Math.max(-240, Math.min(240, p.x)); p.y = Math.max(-180, Math.min(180, p.y));
+    }
+  }
+  if (p.moveDelay > 0) p.moveDelay -= STEP;
+
+  // eating: touching food = it disappears and the meter goes up
+  const pc = COST[f.sprite][f.base];
+  const pr = costumeRadius(pc, 700);
+  for (let i = G.food.length - 1; i >= 0; i--) {
+    const fd = G.food[i], c = COST[fd.sprite][fd.costume];
+    const s = fd.size / 100 / 2;
+    const fx = fd.x + (c.img.width / 2 - c.cx) * s, fy = fd.y - (c.img.height / 2 - c.cy) * s;
+    if (Math.hypot(fx - p.x, fy - p.y) < pr + costumeRadius(c, fd.size)) {
+      G.food.splice(i, 1);
+      G.levelmätare += f.gain;
+      G.popups.push({ x: fx, y: fy, text: "+" + f.gain, t: 0.8 });
+      startAnim("eat");
+    }
+  }
+  for (const fd of G.food) fd.age += STEP;
+
+  // food spawner: forever { wait (1 to 5) secs; create clone }
+  G.spawnTimer -= STEP;
+  if (G.spawnTimer <= 0) { spawnFood(); G.spawnTimer = rand(1, 5); }
+
+  for (const pp of G.popups) { pp.t -= STEP; pp.y += 0.8; }
+  G.popups = G.popups.filter(pp => pp.t > 0);
+
+  // the little swimmer (his Sprajt5): glide 3 secs to random position, forever
+  const cr = G.critter;
+  cr.t += STEP;
+  if (cr.t >= cr.dur) { cr.fx = cr.x; cr.fy = cr.y; cr.tx = rand(-220, 220); cr.ty = rand(-130, 165); cr.t = 0; }
+  const k = Math.min(1, cr.t / cr.dur);
+  cr.x = cr.fx + (cr.tx - cr.fx) * k; cr.y = cr.fy + (cr.ty - cr.fy) * k;
+  cr.ct += STEP; if (cr.ct > 0.3) { cr.ct = 0; cr.costume ^= 1; }
+
+  G.barShown += (Math.min(G.levelmätare, GOAL[G.level]) - G.barShown) * 0.2;
+
+  if (G.level === 1 && G.levelmätare > 49) levelUp();
+  else if (G.level === 2 && G.levelmätare > 64) finish();
+}
+
+// --- LEVEL UP! (broadcast "level uuuuuuuuuuuuuup 1")
+function levelUp() {
+  stopAllSounds();
+  G.scene = "levelup"; G.backdrop = "Stars2"; G.levelUpT = 0;
+  G.food = []; G.popups = [];
+  sfx("Triumph");
+}
+function tickLevelUp() { G.levelUpT += STEP; }
+function pickUpgrade(u) {
+  sfx("pop");
+  G.utveclad = u.form;
+  startLevel(2);
+}
+
+// --- the end (new: his level 2 never ended, so evolving fully is the win)
+function finish() {
+  stopAllSounds();
+  sfx("Win");
+  const time = G.playTime;
+  const prevBest = save.best[G.utveclad];
+  const newForm = !save.found.includes(G.utveclad);
+  if (newForm) save.found.push(G.utveclad);
+  if (prevBest === undefined || time < prevBest) save.best[G.utveclad] = time;
+  writeSave();
+  G.endInfo = { time, best: save.best[G.utveclad], record: prevBest === undefined || time < prevBest, newForm, t: 0 };
+  G.scene = "end"; G.backdrop = "Stars";
+  G.player.costume = FORMS[G.utveclad].base; G.player.anim = null; G.player.animKind = null;
+}
+function tickEnd() {
+  G.endInfo.t += STEP;
+  const p = G.player;
+  if (p.anim) { p.anim.t -= STEP; if (p.anim.t <= 0) nextAnimStep(); }
+  else if (G.endInfo.t % 2.5 < STEP) startAnim("attack");   // show off the attack every few seconds
+}
+const fmtTime = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+
+// --- clicking
+function hit(c, x, y, size, px, py) {
+  const b = costumeBox(c, x, y, size);
+  return px >= b.left - 6 && px <= b.right + 6 && py <= b.top + 6 && py >= b.bottom - 6;
+}
+function hoverTarget(px, py) {
+  if (G.scene === "menu" && hit(COST.play[0], 9, -67, 200, px, py)) return "play";
+  if (G.scene === "choose") for (const ch of CHOOSERS) if (hit(COST[ch.sprite][0], ch.x, ch.y, 700, px, py)) return ch;
+  if (G.scene === "levelup" && G.levelUpT >= 5)
+    for (const u of UPGRADES[G.spelartyp]) if (hit(COST[u.sprite][0], u.x, 0, 700, px, py)) return u;
+  return null;
+}
+function click(px, py) {
+  if (G.scene === "flag") { startMenu(); return; }
+  if (G.scene === "end") { if (G.endInfo.t > 1.5) startMenu(); return; }
+  const h = hoverTarget(px, py);
+  if (!h) return;
+  if (h === "play") startChoose();
+  else if (G.scene === "choose") {
+    G.spelartyp = h.type;
+    G.utveclad = h.type === "meat" ? "normal meat" : "normal plant";
+    G.player = null;
+    startLevel(1);
+  } else if (G.scene === "levelup") pickUpgrade(h);
+}
+
+function tick() {
+  G.t += STEP;
+  G.hover = hoverTarget(mouse.x, mouse.y);
+  canvas.style.cursor = G.hover || G.scene === "flag" || (G.scene === "end" && G.endInfo.t > 1.5) ? "pointer" : "default";
+  if (G.scene === "menu") tickMenu();
+  else if (G.scene === "play") tickPlay();
+  else if (G.scene === "levelup") tickLevelUp();
+  else if (G.scene === "end") tickEnd();
+}
+
+// ---------------------------------------------------------------- 4. DRAW
+function bob(target, amount = 0.06) {      // little hover pulse for clickable things
+  return G.hover === target ? 1 + amount + Math.sin(G.t * 8) * 0.02 : 1;
+}
+function draw() {
+  ctx.setTransform(viewScale, 0, 0, viewScale, canvas.width / 2, canvas.height / 2);
+  ctx.imageSmoothingEnabled = true;          // the starry photo backdrop looks best smooth
+  ctx.fillStyle = "#000"; ctx.fillRect(-240, -180, 480, 360);
+  const bg = BACK[G.backdrop];
+  if (bg && bg.width) ctx.drawImage(bg, -240, -180, 480, 360);
+  ctx.imageSmoothingEnabled = false;         // ...but his pixel art stays crisp
+
+  if (G.scene === "loading") {
+    pixelText("LOADING " + Math.floor(loaded / toLoad * 100) + "%", 0, 4, 2, "#fff");
+  } else if (G.scene === "flag") drawFlag();
+  else if (G.scene === "menu") drawMenu();
+  else if (G.scene === "choose") drawChoose();
+  else if (G.scene === "play") drawPlay();
+  else if (G.scene === "levelup") drawLevelUp();
+  else if (G.scene === "end") drawEnd();
+
+  if (muted && G.scene !== "loading") pixelText("MUTED", 234, 176, 1, "#fff", 1);
+}
+function drawFlag() {
+  drawCostume(COST.sign[0], 11, 45, 400);
+  // a green flag, Scratch style
+  ctx.fillStyle = "#c58a2a"; ctx.fillRect(-22, 10, 4, 44);
+  ctx.fillStyle = "#4cbf56";
+  const w = Math.sin(G.t * 4) * 2;
+  ctx.beginPath(); ctx.moveTo(-18, 10); ctx.quadraticCurveTo(0, 4 + w, 20, 12); ctx.lineTo(20, 34);
+  ctx.quadraticCurveTo(0, 26 + w, -18, 32); ctx.closePath(); ctx.fill();
+  pixelText("CLICK TO START", 0, -62, 2, "#fff");
+  pixelText("M = MUTE", 0, -150, 1, "rgba(255,255,255,.6)");
+}
+function drawMenu() {
+  drawCostume(COST.stars[G.starCostume], 89, 78, 600);
+  for (const p of G.planets) drawCostume(COST[p.name][0], p.drawX, p.y, p.size);
+  drawCostume(COST.sign[0], 11, 15 + Math.sin(G.t * 1.5) * 2, 400);
+  drawCostume(COST.play[0], 9, -67, 200 * bob("play"));
+  if (save.found.length)
+    pixelText("FORMS FOUND " + save.found.length + "/" + FINAL_FORMS.length, 0, -110, 1, "rgba(255,255,255,.75)");
+}
+function drawChoose() {
+  pixelText("CHOOSE YOUR ANIMOL", 0, 120, 3, "#fff", 0.5, BLUE);
+  for (const ch of CHOOSERS) {
+    const sc = bob(ch, 0.12);
+    drawCostume(COST[ch.sprite][0], ch.x, ch.y + Math.sin(G.t * 2 + ch.x) * 3, 700 * sc);
+    pixelText(ch.label, ch.x, -70, 2, G.hover === ch ? "#fff" : "#9fb4ff", 0.5, BLUE);
+  }
+}
+function drawPlay() {
+  const p = G.player, f = FORMS[G.utveclad];
+  // swimmer
+  const cr = G.critter;
+  drawCostume(COST.Sprajt5[cr.costume], cr.x, cr.y, 500, 90, 0.85);
+  // food (pops in when it spawns)
+  for (const fd of G.food) {
+    const k = Math.min(1, fd.age / 0.25);
+    const pop = k < 1 ? k * (1.25 - 0.25 * k) : 1;
+    drawCostume(COST[fd.sprite][fd.costume], fd.x, fd.y + Math.sin(G.t * 2 + fd.x) * 1.5, fd.size * pop);
+  }
+  drawCostume(COST[f.sprite][p.costume], p.x, p.y, 700, p.dir);
+  for (const pp of G.popups) {
+    ctx.globalAlpha = Math.min(1, pp.t / 0.3);
+    pixelText(pp.text, pp.x, pp.y + 10, 2, "#fff", 0.5, BLUE);
+    ctx.globalAlpha = 1;
+  }
+  // his level meter: frame (Sprajt3) and cyan bar (Sprajt1) sliding in from the left
+  const goal = GOAL[G.level];
+  drawCostume(COST.Sprajt3[0], -5, -163, 100);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(-242, 163 - 15, 408, 30); ctx.clip();
+  drawCostume(COST.Sprajt1[0], -400 + G.barShown * (400 / goal), -163, 100);
+  ctx.restore();
+  pixelText("LEVEL " + G.level, -236, -138, 2, "#fff", 0, BLUE);
+  pixelText(Math.min(G.levelmätare, goal) + "/" + goal, 236, -138, 2, "#fff", 1, BLUE);
+  if (G.hintT > 0) {
+    ctx.globalAlpha = Math.min(1, G.hintT);
+    const verb = f.attackName;
+    pixelText(G.level === 1 ? "SWIM WITH THE MOUSE" : f.label, 0, 150, 2, "#fff", 0.5, BLUE);
+    pixelText("EAT " + (G.spelartyp === "meat" ? "MEAT" : "PLANTS") + "  -  E = " + verb, 0, 128, 2, "#fff", 0.5, BLUE);
+    ctx.globalAlpha = 1;
+  }
+  if (isTouch) {
+    ctx.fillStyle = "rgba(255,255,255,.25)";
+    ctx.beginPath(); ctx.arc(200, -120, 24, 0, Math.PI * 2); ctx.fill();
+    pixelText("E", 200, -109, 3, "#fff");
+  }
+}
+function drawLevelUp() {
+  const t = G.levelUpT;
+  if (t < 5) {
+    const k = Math.min(1, t / 0.35);
+    const sc = k < 1 ? 0.3 + k * 0.85 : 1.15 - Math.min(0.15, (t - 0.35) * 0.6);
+    drawCostume(COST.Sprajt4[0], 0, Math.sin(t * 3) * 4, 100 * sc);
+  } else {
+    pixelText("EVOLVE!", 0, 120, 4, "#fff", 0.5, BLUE);
+    const appear = Math.min(1, (t - 5) / 0.3);
+    const names = { attack: "ATTACK", eat: "EAT", defence: "DEFENCE" };
+    for (const u of UPGRADES[G.spelartyp]) {
+      drawCostume(COST[u.sprite][0], u.x, Math.sin(G.t * 2 + u.x) * 3, 700 * appear * bob(u, 0.12));
+      pixelText(names[u.kind], u.x, -62, 2, G.hover === u ? "#fff" : "#9fb4ff", 0.5, BLUE);
+      if (u.kind === "eat") pixelText("2 X FOOD", u.x, -82, 1, "#ffe066", 0.5, null);
+    }
+  }
+}
+function drawEnd() {
+  const e = G.endInfo, f = FORMS[G.utveclad];
+  pixelText("FULLY EVOLVED!", 0, 150, 4, "#fff", 0.5, BLUE);
+  pixelText(f.label, 0, 112, 2, "#9fb4ff", 0.5, BLUE);
+  drawCostume(COST[f.sprite][G.player.costume], 0, 10 + Math.sin(G.t * 2) * 4, 1000);
+  pixelText("TIME " + fmtTime(e.time) + "   BEST " + fmtTime(e.best), 0, -78, 2, "#fff", 0.5, BLUE);
+  if (e.record) pixelText(e.newForm ? "NEW FORM FOUND!" : "NEW RECORD!", 0, -100, 2, "#ffe066", 0.5, BLUE);
+  pixelText("FORMS FOUND " + save.found.length + "/" + FINAL_FORMS.length, 0, -122, 1, "rgba(255,255,255,.8)");
+  if (e.t > 1.5) pixelText("CLICK TO PLAY AGAIN", 0, -145, 2, Math.sin(G.t * 5) > 0 ? "#fff" : "#9fb4ff", 0.5, BLUE);
+}
+
+// ---------------------------------------------------------------- main loop
+let last = 0, acc = 0;
+function frame(now) {
+  if (G.scene === "loading" && loaded >= toLoad) toFlag();
+  acc += Math.min(0.25, (now - last) / 1000 || 0);
+  last = now;
+  while (acc >= STEP) { tick(); acc -= STEP; }
+  draw();
+  requestAnimationFrame(frame);
+}
+if (!window.__ANIMOL_TEST) requestAnimationFrame(t => { last = t; frame(t); });
+</script>
+</body>
+</html>
