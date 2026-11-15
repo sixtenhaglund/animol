@@ -57,29 +57,38 @@ const SOUNDS = {
 
 // The four zones. goal = how full his level meter (levelmätare) must get.
 const ZONES = [
-  { name: "Shallow Sea", sub: "Where it all begins", kind: "sea",  goal: 50,  music: "Elec Piano Loop",
-    w: 1900, h: 1250, food: [0.9, 1.8], foodCap: 26, startFood: 16, prey: 2,
-    enemies: [{ type: "nibbler", max: 1, every: [12, 18], after: 8 }] },
+  { name: "Shallow Sea", sub: "Where it all begins", kind: "sea", goal: 50, music: "Elec Piano Loop",
+    w: 1900, h: 1250, food: [0.9, 1.8], foodCap: 26, startFood: 16, prey: 2, alpha: "nibbler",
+    enemies: [{ type: "nibbler", max: 2, every: [9, 14], after: 6 }] },
   { name: "Open Sea", sub: "Hunters roam here", kind: "open", goal: 65, music: "Techno",
-    w: 2100, h: 1400, food: [0.8, 1.6], foodCap: 28, startFood: 16, prey: 3,
-    enemies: [{ type: "nibbler", max: 2, every: [9, 14], after: 0 }, { type: "spikefish", max: 2, every: [10, 16], after: 4 }] },
+    w: 2100, h: 1400, food: [0.8, 1.6], foodCap: 28, startFood: 16, prey: 3, alpha: "spikefish",
+    enemies: [{ type: "nibbler", max: 2, every: [7, 11], after: 0 }, { type: "spikefish", max: 2, every: [8, 13], after: 3 }] },
   { name: "The Deep", sub: "Follow the lights... or don't", kind: "deep", goal: 80, music: "Emotional Piano",
-    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 3,
-    enemies: [{ type: "angler", max: 2, every: [9, 14], after: 3 }, { type: "nibbler", max: 2, every: [8, 12], after: 0 },
-              { type: "spikefish", max: 1, every: [14, 20], after: 10 }] },
+    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 3, alpha: "angler",
+    enemies: [{ type: "angler", max: 2, every: [8, 12], after: 2 }, { type: "nibbler", max: 3, every: [6, 10], after: 0 },
+              { type: "spikefish", max: 2, every: [11, 16], after: 8 }] },
   { name: "The Shore", sub: "Your first steps on land", kind: "land", goal: 100, music: "Video Game 1",
-    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 0,
-    enemies: [{ type: "crab", max: 3, every: [6, 10], after: 2 }], gulls: [7, 12] },
+    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 0, alpha: "crab", boss: "boss",
+    enemies: [{ type: "crab", max: 4, every: [5, 8], after: 2 }], gulls: [6, 10] },
+  { name: "The Moon", sub: "One small step for an animol", kind: "moon", goal: 110, music: "Space Ambience",
+    w: 2100, h: 1400, food: [0.7, 1.3], foodCap: 30, startFood: 18, prey: 0, alpha: "mite",
+    enemies: [{ type: "mite", max: 3, every: [5, 8], after: 0 }], meteors: [5, 8] },
+  { name: "Mars", sub: "Something huge lives under the red sand...", kind: "mars", goal: 120, music: "Techno",
+    w: 2200, h: 1450, food: [0.7, 1.3], foodCap: 30, startFood: 18, prey: 0, alpha: "dustling", boss: "worm",
+    enemies: [{ type: "dustling", max: 3, every: [5, 8], after: 0 }, { type: "mite", max: 2, every: [8, 12], after: 10 }], storms: [14, 20] },
 ];
 
 // Enemies (new). hp, speed (units/s), dmg, how far they notice you, evolution points when beaten
 const ENEMY = {
-  nibbler:   { r: 15, hp: 2,  speed: 95,  dmg: 1, aggro: 330, lunge: 360, windup: 0.45, reward: 2 },
-  spikefish: { r: 20, hp: 4,  speed: 100, dmg: 2, aggro: 380, lunge: 380, windup: 0.5,  reward: 3, spiky: true },
-  angler:    { r: 24, hp: 6,  speed: 80,  dmg: 3, aggro: 330, lunge: 460, windup: 0.6,  reward: 4 },
-  crab:      { r: 20, hp: 5,  speed: 105, dmg: 2, aggro: 420, lunge: 380, windup: 0.45, reward: 3 },
-  prey:      { r: 11, hp: 1,  speed: 150, dmg: 0, aggro: 200, reward: 3, prey: true },
-  boss:      { r: 58, hp: 34, speed: 95,  dmg: 3, aggro: 9999, lunge: 620, windup: 0.8, reward: 0, boss: true },
+  nibbler:   { r: 15, hp: 2,  speed: 95,  dmg: 1, aggro: 340, lunge: 360, windup: 0.45, reward: 2, name: "Nibbler" },
+  spikefish: { r: 20, hp: 4,  speed: 100, dmg: 2, aggro: 390, lunge: 380, windup: 0.5,  reward: 3, name: "Spikefish" },
+  angler:    { r: 24, hp: 6,  speed: 85,  dmg: 3, aggro: 340, lunge: 460, windup: 0.6,  reward: 4, name: "Angler" },
+  crab:      { r: 20, hp: 5,  speed: 110, dmg: 2, aggro: 430, lunge: 390, windup: 0.45, reward: 3, name: "Crab" },
+  mite:      { r: 16, hp: 4,  speed: 120, dmg: 2, aggro: 430, lunge: 540, windup: 0.4,  reward: 3, name: "Moon Mite" },
+  dustling:  { r: 18, hp: 6,  speed: 125, dmg: 3, aggro: 460, lunge: 480, windup: 0.45, reward: 4, name: "Dustling" },
+  prey:      { r: 11, hp: 1,  speed: 150, dmg: 0, aggro: 200, reward: 3, prey: true, name: "Yellowfish" },
+  boss:      { r: 58, hp: 40, speed: 95,  dmg: 3, aggro: 9999, lunge: 620, windup: 0.8, reward: 0, boss: true, name: "THE APEX" },
+  worm:      { r: 40, hp: 70, speed: 115, dmg: 4, aggro: 9999, lunge: 650, windup: 0.7, reward: 0, boss: true, name: "THE SAND WORM" },
 };
 
 // ----------------------------------------------------------- screen + camera
@@ -98,7 +107,6 @@ function resize() {
   BH = canvas.height = Math.max(1, Math.round(h * DPR));
   ZOOM = Math.min(BW / 1050, BH / 650);  // you always see about 1050 x 650 of the world
   UI = Math.min(BW / 1280, BH / 720);
-  UI = Math.max(UI, Math.min(BW, BH) / 900 * 0.75);
   VW = BW / UI; VH = BH / UI;
 }
 window.addEventListener("resize", resize);
@@ -131,7 +139,7 @@ canvas.addEventListener("pointerdown", e => {
   if (e.pointerType === "touch") isTouch = true;
   if (e.pointerType === "touch" && touchOnButton(e)) { onAttackButton(); return; }
   setMouseFromEvent(e);
-  onClick(mouse.ux, mouse.uy, e.pointerType);
+  onClick(mouse.ux, mouse.uy, e.pointerType, e.button);
 });
 canvas.addEventListener("contextmenu", e => e.preventDefault());
 window.addEventListener("keydown", e => {
@@ -145,10 +153,20 @@ window.addEventListener("keyup", e => { keys[e.code] = false; });
 window.addEventListener("blur", () => { if (typeof autoPause === "function") autoPause(); });
 
 // ----------------------------------------------------------- saving
-let save = { best: {}, found: [], vol: 0.8, muted: false, wins: 0 };
+let save = { best: {}, found: [], vol: 0.8, muted: false, wins: 0, ach: [], totals: { eaten: 0, kills: 0, alphas: 0 }, hardFound: [], hard: false, dna: 0, shop: {} };
 try {
   const s = JSON.parse(localStorage.getItem("animol.v2"));
-  if (s && typeof s === "object") save = Object.assign(save, s);
+  if (s && typeof s === "object" && !Array.isArray(s)) save = Object.assign(save, s);
+  // older saves (from before achievements / the shop) just get the new empty fields
+  save.totals = Object.assign({ eaten: 0, kills: 0, alphas: 0 }, save.totals && typeof save.totals === "object" ? save.totals : {});
+  for (const k of ["eaten", "kills", "alphas"]) save.totals[k] = Math.max(0, Math.floor(+save.totals[k] || 0));
+  save.wins = Math.max(0, Math.floor(+save.wins || 0));
+  for (const k of ["ach", "found", "hardFound"]) if (!Array.isArray(save[k])) save[k] = [];
+  if (!save.shop || typeof save.shop !== "object" || Array.isArray(save.shop)) save.shop = {};
+  if (!save.best || typeof save.best !== "object") save.best = {};
+  save.dna = Math.max(0, Math.floor(+save.dna || 0));
+  save.vol = Number.isFinite(+save.vol) ? Math.min(1, Math.max(0, +save.vol)) : 0.8;
+  save.muted = !!save.muted; save.hard = !!save.hard;
 } catch (e) {}
 function writeSave() { try { localStorage.setItem("animol.v2", JSON.stringify(save)); } catch (e) {} }
 const volume = () => (save.muted ? 0 : save.vol);
@@ -240,7 +258,7 @@ function ambience(kind) {
   if (!kind) return;
   const s = A.createBufferSource(), f = A.createBiquadFilter(), g = A.createGain(), lfo = A.createOscillator(), lg = A.createGain();
   s.buffer = synth.noise; s.loop = true;
-  const cfg = { sea: ["lowpass", 520, 0.06], open: ["lowpass", 380, 0.07], deep: ["lowpass", 200, 0.11], land: ["bandpass", 650, 0.05], space: ["lowpass", 260, 0.03] }[kind];
+  const cfg = { sea: ["lowpass", 520, 0.06], open: ["lowpass", 380, 0.07], deep: ["lowpass", 200, 0.11], land: ["bandpass", 650, 0.05], space: ["lowpass", 260, 0.03], moon: ["lowpass", 170, 0.05], mars: ["bandpass", 480, 0.07] }[kind];
   f.type = cfg[0]; f.frequency.value = cfg[1]; f.Q.value = 0.7;
   lfo.frequency.value = kind === "land" ? 0.13 : 0.2; lg.gain.value = cfg[1] * 0.35;
   lfo.connect(lg); lg.connect(f.frequency);
@@ -300,7 +318,7 @@ function shadow(g, x, y, rx, ry, a = 0.22) {
 //   ATTACK 1+ ....... his two brown knobs with white whiskers; 2+ bone spikes; 3 war paint + red eyes
 //   EAT 1+ .......... meat: his big box jaws, plant: his three vines; 2+ glowing feelers; 3 bigger body
 //   DEFENCE 1+ ...... his white spikes all around; 2+ armour plates; 3 longer spikes
-function drawCreature(g, x, y, ang, k, L) {
+function drawCreatureV1(g, x, y, ang, k, L) {
   const R = 24, st = L.stats, plant = L.type === "plant";
   const S = k * (st.eat >= 3 ? 1.12 : 1);
   g.save();
@@ -417,7 +435,7 @@ function drawVines(g, R, L) {                // his brown wiggly vine (plant eat
     g.restore();
   }
   angles.forEach((a0, i) => {
-    const len = (i === 0 ? 40 : 34) * (1 - curl * 0.35);
+    const len = (i === 0 ? 40 : 34) * (1 - curl * 0.35) * (1 + (L.reach || 0) * 0.25);
     drawVine(g, vinePoints(a0 + sw, R, len, L.t, 0.32 + curl * 0.6, i * 2.1, curl * 1.4 * (i % 2 ? -1 : 1)), i === 0 ? 5 : 4.2);
   });
 }
@@ -434,7 +452,7 @@ function drawSpikes(g, R, L) {              // his white spikes (DEFENCE form)
     g.closePath(); g.fill(); g.stroke();
   }
 }
-function drawPlates(g, R) {                  // new: armour plates (DEFENCE 2+)
+function drawPlatesV1(g, R) {                  // new: armour plates (DEFENCE 2+)
   for (let k = -1; k <= 1; k++) {
     const a = Math.PI + k * 0.78, h = 0.32;
     g.beginPath(); g.arc(0, 0, R + 1.5, a - h, a + h); g.arc(0, 0, R * 0.5, a + h * 0.8, a - h * 0.8, true); g.closePath();
@@ -546,7 +564,7 @@ function eyeDot(g, x, y, r, angry, red) {
   circle(g, -r * 0.3, -r * 0.3, r * 0.3); g.fillStyle = "#fff"; g.fill();
   g.restore();
 }
-function drawEnemy(g, e, t) {
+function drawEnemyBase(g, e, t) {
   const D = ENEMY[e.type];
   g.save(); g.translate(e.x, e.y); g.rotate(e.ang);
   g.lineJoin = "round"; g.lineCap = "round";
@@ -637,7 +655,7 @@ function drawEnemy(g, e, t) {
   }
   g.restore();
 }
-function drawGull(gl, g, t) {               // new: shore bird seen from above + its shadow
+function drawGullBase(gl, g, t) {               // new: shore bird seen from above + its shadow
   const k = gl.t / gl.dur;
   // shadow on the ground = the warning
   const sr = 18 + k * 30;
@@ -758,7 +776,7 @@ function drawSpace(g, t, px = 0, py = 0) {
 // The floor of each zone is painted once into an off-screen canvas (fast), then
 // moving things (light, kelp, bubbles, waves) are drawn on top every frame.
 const FLOOR_RES = 0.5;
-function buildFloor(z) {
+function buildFloorBase(z) {
   const Z = ZONES[z], r = seeded(z * 977 + 3);
   const c = makeCanvas(Z.w * FLOOR_RES, Z.h * FLOOR_RES), g = c.getContext("2d");
   g.scale(FLOOR_RES, FLOOR_RES);
@@ -838,24 +856,371 @@ function getCaustics() {
 }
 
 // =====================================================================
-// PART 3 - GAME: scenes, rules, HUD and the main loop
+// PART 2b - NEW ART: higher evolution tiers, mutations, space helmet,
+// alpha crowns, moon mites, dustlings, the Sand Worm, meteors, moon + mars
+// =====================================================================
+
+// The creature, version 2 (adds tier 4/5 looks + mutations + helmet)
+function drawCreature(g, x, y, ang, k, L) {
+  const R = 24, st = L.stats, plant = L.type === "plant", mut = L.mut || {};
+  const S = k * (st.eat >= 5 ? 1.22 : st.eat >= 3 ? 1.12 : 1);
+  g.save();
+  g.translate(x, y); g.rotate(ang); g.scale(S, S);
+  g.lineJoin = "round"; g.lineCap = "round";
+  if (Math.max(st.atk, st.eat, st.def) >= 5) drawAura(g, R, L);
+  if (mut.regen) drawRegenGlow(g, R, L, mut.regen);
+  if (L.legs) drawLegs(g, R, L);
+  if (L.evolved) drawTail(g, R, L);
+  if (mut.speed) drawSideFins(g, R, L, mut.speed);
+  if (plant) drawVines(g, R, Object.assign({}, L, { reach: mut.reach || 0 }));
+  if (st.def >= 1) drawSpikes(g, R, L);
+  drawBody(g, R, ang, L);
+  if (st.eat >= 4) drawGlowSpots(g, R, L);
+  if (st.def >= 2) drawPlates(g, R, st.def >= 4);
+  if (st.atk >= 1) drawKnobs(g, R, L);
+  if (st.atk >= 4) drawHorns(g, R, L);
+  if (st.atk >= 3) drawWarPaint(g, R);
+  drawEyes(g, R, L);
+  if (!plant) {
+    g.save(); if (mut.reach) { g.translate(R, 0); g.scale(1 + mut.reach * 0.18, 1 + mut.reach * 0.12); g.translate(-R, 0); }
+    if (st.eat >= 1) drawJaws(g, R, L); else drawClaws(g, R, L);
+    g.restore();
+  }
+  if (mut.poison) drawPoison(g, R, L, mut.poison);
+  if (st.eat >= 2) drawFeelers(g, R, L);
+  if (L.flash > 0) { circle(g, 0, 0, R + 1); g.fillStyle = `rgba(255,255,255,${L.flash * 0.75})`; g.fill(); }
+  if (L.helmet) drawHelmet(g, R, L);
+  g.restore();
+}
+function drawPlates(g, R, crystal) {          // armour plates; DEFENCE 4 turns them to crystal
+  for (let k = -1; k <= 1; k++) {
+    const a = Math.PI + k * 0.78, h = 0.32;
+    g.beginPath(); g.arc(0, 0, R + 1.5, a - h, a + h); g.arc(0, 0, R * 0.5, a + h * 0.8, a - h * 0.8, true); g.closePath();
+    const gr = g.createRadialGradient(0, 0, R * 0.5, 0, 0, R + 2);
+    gr.addColorStop(0, crystal ? "#b8f0ff" : "#1a9b44"); gr.addColorStop(1, crystal ? "#2a7fb8" : "#0b6a2a");
+    strokeFill(g, gr, crystal ? "#0b2f52" : COL.line, 2.2);
+    g.beginPath(); g.arc(0, 0, R - 1.5, a - h * 0.75, a + h * 0.75); g.strokeStyle = crystal ? "rgba(255,255,255,.8)" : "rgba(170,255,190,.55)"; g.lineWidth = 1.6; g.stroke();
+  }
+}
+function drawHorns(g, R, L) {                // ATTACK 4: two curved bone horns
+  for (const s of [-1, 1]) {
+    g.save(); g.scale(1, s);
+    g.beginPath(); g.moveTo(R * 0.25, -R * 0.78); g.quadraticCurveTo(R * 0.7, -R * 1.45, R * 1.35, -R * 1.25);
+    g.quadraticCurveTo(R * 0.85, -R * 1.1, R * 0.62, -R * 0.62); g.closePath();
+    strokeFill(g, radial(g, R * 0.7, -R, R * 0.6, ["#ffffff", "#e9e2cf", "#a89c7d"]), "#5a4e33", 2.2);
+    g.strokeStyle = "rgba(90,78,51,.5)"; g.lineWidth = 1.2;
+    for (const k of [0.35, 0.55, 0.75]) { g.beginPath(); g.moveTo(R * (0.3 + k * 0.8), -R * (0.85 + k * 0.4)); g.lineTo(R * (0.45 + k * 0.8), -R * (0.7 + k * 0.4)); g.stroke(); }
+    g.restore();
+  }
+}
+function drawGlowSpots(g, R, L) {            // EAT 4: glowing spots
+  g.save(); g.globalCompositeOperation = "lighter";
+  [[-10, 7], [-4, -12], [-14, -3], [2, 13], [-8, -1], [6, -4]].forEach(([x, y], i) => {
+    const p = 0.55 + 0.45 * Math.sin(L.t * 3 + i);
+    circle(g, x, y, 4.5); g.fillStyle = radial(g, x, y, 4.5, [`rgba(140,255,240,${0.9 * p})`, "rgba(0,0,0,0)"], 0, 0); g.fill();
+  });
+  g.restore();
+}
+function drawAura(g, R, L) {                 // any stat at 5: golden aura
+  g.save(); g.globalCompositeOperation = "lighter";
+  const p = 0.6 + 0.4 * Math.sin(L.t * 4);
+  circle(g, 0, 0, R + 22); g.fillStyle = radial(g, 0, 0, R + 22, ["rgba(255,220,90,0)", `rgba(255,210,70,${0.28 * p})`, "rgba(255,200,60,0)"], 0, 0); g.fill();
+  g.restore();
+}
+function drawRegenGlow(g, R, L, lvl) {
+  g.save(); g.globalCompositeOperation = "lighter";
+  const p = 0.5 + 0.5 * Math.sin(L.t * 2.5);
+  circle(g, 0, 0, R + 9); g.fillStyle = radial(g, 0, 0, R + 9, ["rgba(90,255,140,0)", `rgba(90,255,140,${0.12 * lvl * p})`, "rgba(90,255,140,0)"], 0, 0); g.fill();
+  g.restore();
+}
+function drawSideFins(g, R, L, lvl) {        // SPEED: little side fins
+  const flap = Math.sin(L.t * 14) * 0.25 * (0.3 + (L.moving || 0));
+  for (const s of [-1, 1]) {
+    g.save(); g.scale(1, s); g.translate(-R * 0.35, -R * 0.92); g.rotate(-0.5 - flap);
+    g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-8, -10 - lvl * 3, -18 - lvl * 4, -6); g.quadraticCurveTo(-9, -1, 0, 3); g.closePath();
+    strokeFill(g, "#7dfcff", "#0b4a5a", 2);
+    g.restore();
+  }
+}
+function drawPoison(g, R, L, lvl) {          // POISON: purple drips at the mouth
+  g.save(); g.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const y = s * 7, x = R + 10 + Math.sin(L.t * 3 + s) * 1.5, drip = (L.t * 1.2 + (s + 1) * 0.3) % 1;
+    circle(g, x, y + drip * 6 * s, 2.6 + lvl * 0.6); g.fillStyle = `rgba(200,90,255,${0.8 - drip * 0.5})`; g.fill();
+  }
+  g.restore();
+}
+function drawHelmet(g, R, L) {               // space bubble helmet
+  circle(g, 0, 0, R + 12);
+  g.fillStyle = radial(g, 0, 0, R + 12, ["rgba(200,240,255,.05)", "rgba(180,230,255,.12)", "rgba(170,220,255,.35)"], 0, 0); g.fill();
+  g.lineWidth = 2.2; g.strokeStyle = "rgba(225,245,255,.75)"; g.stroke();
+  g.beginPath(); g.arc(0, 0, R + 8, -2.4, -1.5); g.lineWidth = 3; g.strokeStyle = "rgba(255,255,255,.7)"; g.stroke();
+  g.beginPath(); g.arc(-R - 12, 0, 4, 0, Math.PI * 2); g.fillStyle = "#b7c2d4"; g.fill(); g.strokeStyle = "#3a4458"; g.lineWidth = 1.5; g.stroke();
+}
+
+// ---------------------------------------------------------------- enemies v2
+function drawEnemy(g, e, t) {
+  if (e.type === "worm") return drawWorm(g, e, t);
+  const sc = e.scale || 1, D = ENEMY[e.type];
+  if (e.alpha) {
+    g.save(); g.globalCompositeOperation = "lighter"; const r = D.r * sc * 1.9;
+    circle(g, e.x, e.y, r); g.fillStyle = radial(g, e.x, e.y, r, ["rgba(255,210,60,.35)", "rgba(255,150,30,0)"], 0, 0); g.fill(); g.restore();
+  }
+  g.save(); g.translate(e.x, e.y); g.scale(sc, sc); g.translate(-e.x, -e.y);
+  if (e.type === "mite") drawMite(g, e, t);
+  else if (e.type === "dustling") drawDustling(g, e, t);
+  else drawEnemyBase(g, e, t);
+  g.restore();
+  if (e.poisonT > 0) {
+    g.save(); g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1, rr = D.r * sc * 0.8; circle(g, e.x + Math.cos(a) * rr, e.y + Math.sin(a) * rr - ((t * 20 + i * 7) % 14), 3); g.fillStyle = "rgba(200,90,255,.7)"; g.fill(); }
+    g.restore();
+  }
+  if (e.alpha) drawCrown(g, e.x, e.y - D.r * sc - 14, 1 + sc * 0.1, t);
+}
+function drawCrown(g, x, y, s, t) {
+  g.save(); g.translate(x, y + Math.sin(t * 3) * 2); g.scale(s, s); g.lineJoin = "round";
+  g.beginPath(); g.moveTo(-14, 7); g.lineTo(-16, -6); g.lineTo(-8, 0); g.lineTo(0, -10); g.lineTo(8, 0); g.lineTo(16, -6); g.lineTo(14, 7); g.closePath();
+  strokeFill(g, radial(g, 0, 0, 16, ["#fff6b0", "#ffcf2e", "#c98a00"]), "#5a3a00", 2.2);
+  for (const [cx, c] of [[-8, "#ff4a6a"], [0, "#4ad8ff"], [8, "#ff4a6a"]]) { circle(g, cx, 3, 2.2); g.fillStyle = c; g.fill(); }
+  g.restore();
+}
+function drawMite(g, e, t) {                 // moon mite: grey cyclops bug that hops
+  const hop = e.state === "lunge" ? Math.sin(Math.PI * clamp(1 - e.timer / 0.26, 0, 1)) : 0;
+  const fl = e.flash > 0;
+  if (hop > 0) shadow(g, e.x + 4, e.y + 10, 14, 9, 0.25);
+  g.save(); g.translate(e.x, e.y - hop * 18); g.rotate(e.ang); g.scale(1 + hop * 0.25, 1 + hop * 0.25);
+  g.lineCap = "round"; g.lineJoin = "round";
+  const step = Math.sin(t * 18 + e.seed) * (e.moving ? 1 : 0.2);
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const bx = -6 + i * 7, sw = (i % 2 ? step : -step) * 3;
+    g.beginPath(); g.moveTo(bx, s * 8); g.lineTo(bx + sw - 2, s * 18); g.lineTo(bx + sw - 6, s * 24);
+    g.lineWidth = 4.5; g.strokeStyle = "#20202c"; g.stroke(); g.lineWidth = 2.2; g.strokeStyle = fl ? "#fff" : "#9a9ab8"; g.stroke();
+  }
+  g.beginPath(); g.ellipse(-2, 0, 16, 13, 0, 0, Math.PI * 2);
+  strokeFill(g, fl ? "#fff" : radial(g, -2, 0, 16, ["#e8e6ff", "#a3a0c8", "#55527a"]), "#20202c", 2.6);
+  g.strokeStyle = "rgba(40,40,70,.35)"; g.lineWidth = 1.6;
+  g.beginPath(); g.arc(-6, 0, 9, -1.2, 1.2); g.stroke();
+  const wind = e.state === "windup";
+  circle(g, 8, 0, 6.5); g.fillStyle = "#fff"; g.fill(); g.strokeStyle = "#20202c"; g.lineWidth = 1.8; g.stroke();
+  circle(g, 9.5, 0, wind ? 4.2 : 3.2); g.fillStyle = wind ? "#ff3b3b" : "#2bd16a"; g.fill();
+  circle(g, 10.5, 0, 1.6); g.fillStyle = "#000"; g.fill();
+  g.beginPath(); g.moveTo(4, -9); g.quadraticCurveTo(10, -18, 16, -15); g.moveTo(4, 9); g.quadraticCurveTo(10, 18, 16, 15); g.lineWidth = 1.6; g.strokeStyle = "#20202c"; g.stroke();
+  g.restore();
+}
+function drawDustling(g, e, t) {             // mars dustling: spinning red spiky tumbler
+  const fl = e.flash > 0, spin = t * (e.state === "lunge" ? 18 : 6) + e.seed;
+  g.save(); g.translate(e.x, e.y); g.lineJoin = "round";
+  g.save(); g.rotate(spin);
+  g.fillStyle = fl ? "#fff" : "#7a2a12"; g.strokeStyle = "#2a0a02"; g.lineWidth = 1.5;
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), r1 = e.state === "windup" ? 30 : 25;
+    g.beginPath(); g.moveTo(c * 14 - s * 4, s * 14 + c * 4); g.lineTo(c * r1, s * r1); g.lineTo(c * 14 + s * 4, s * 14 - c * 4); g.closePath(); g.fill(); g.stroke();
+  }
+  circle(g, 0, 0, 17);
+  strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 17, ["#ffb07a", "#e0521e", "#7a2408"]), "#2a0a02", 2.6);
+  g.strokeStyle = "rgba(60,15,0,.45)"; g.lineWidth = 2;
+  for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(0, 0, 6 + i * 4, i, i + 2.2); g.stroke(); }
+  g.restore();
+  g.rotate(e.ang);
+  for (const s of [-1, 1]) {
+    g.save(); g.translate(6, s * 5);
+    circle(g, 0, 0, 3.6); g.fillStyle = "#fff"; g.fill(); circle(g, 0.8, 0, 2); g.fillStyle = "#000"; g.fill();
+    g.beginPath(); g.moveTo(-4, -s * 4.5); g.lineTo(4, -s * 2.5); g.lineWidth = 2; g.strokeStyle = "#2a0a02"; g.stroke();
+    g.restore();
+  }
+  g.restore();
+}
+function drawWorm(g, e, t) {                 // THE SAND WORM (final boss)
+  if (e.state === "burrow") {
+    const k = 1 - e.timer / e.burrowDur;
+    g.save();
+    g.fillStyle = `rgba(90,30,10,${0.15 + k * 0.3})`; g.beginPath(); g.ellipse(e.tx, e.ty, 50 + k * 30, 34 + k * 20, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = `rgba(255,60,30,${0.4 + 0.5 * (Math.sin(t * 22) * 0.5 + 0.5)})`; g.lineWidth = 3; g.setLineDash([8, 7]);
+    g.beginPath(); g.ellipse(e.tx, e.ty, 72, 48, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+    for (let i = 0; i < 6; i++) { const a = t * 2 + i; circle(g, e.tx + Math.cos(a * 1.7) * 30 * k, e.ty + Math.sin(a * 2.3) * 20 * k, 4 + (i % 3)); g.fillStyle = "rgba(170,80,40,.6)"; g.fill(); }
+    g.restore();
+    return;
+  }
+  const fl = e.flash > 0;
+  g.save(); g.lineJoin = "round";
+  for (let i = e.segs.length - 1; i >= 0; i--) {
+    const s = e.segs[i], r = 34 - i * 1.7, prev = i ? e.segs[i - 1] : e, a = Math.atan2(prev.y - s.y, prev.x - s.x);
+    shadow(g, s.x + 8, s.y + 12, r, r * 0.7, 0.22);
+    g.save(); g.translate(s.x, s.y); g.rotate(a);
+    circle(g, 0, 0, r);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, r, ["#ffb48a", i % 2 ? "#c8532a" : "#d8642f", "#5e1c08"]), "#2a0a02", 3);
+    g.beginPath(); g.arc(0, 0, r * 0.75, -1.1, 1.1); g.strokeStyle = "rgba(60,15,0,.4)"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#f2e0c8"; g.strokeStyle = "#3a1a08"; g.lineWidth = 1.2;
+    for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(-5, sd * r * 0.85); g.lineTo(0, sd * (r + 8)); g.lineTo(5, sd * r * 0.85); g.closePath(); g.fill(); g.stroke(); }
+    g.restore();
+  }
+  // head
+  const open = e.state === "windup" ? 1 : e.state === "lunge" ? 0.7 : 0.25 + Math.sin(t * 3) * 0.1;
+  shadow(g, e.x + 10, e.y + 14, 44, 30, 0.25);
+  g.save(); g.translate(e.x, e.y); g.rotate(e.ang);
+  for (const s of [-1, 1]) for (const k of [0, 1]) {
+    g.save(); g.scale(1, s); g.translate(30, -12 - k * 10); g.rotate(-open * 0.6 - k * 0.3);
+    g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(22, -14, 34, 4); g.quadraticCurveTo(20, -4, 0, 8); g.closePath();
+    strokeFill(g, fl ? "#fff" : "#f2e0c8", "#3a1a08", 2.4);
+    g.restore();
+  }
+  circle(g, 0, 0, 42);
+  strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 42, ["#ffc39e", "#d8642f", "#5e1c08"]), "#2a0a02", 3.5);
+  circle(g, 20, 0, 16 + open * 6); g.fillStyle = "#2a0006"; g.fill();
+  g.fillStyle = "#f2e0c8";
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, rr = 16 + open * 6; g.beginPath(); g.moveTo(20 + Math.cos(a) * rr, Math.sin(a) * rr); g.lineTo(20 + Math.cos(a + 0.2) * rr * 0.55, Math.sin(a + 0.2) * rr * 0.55); g.lineTo(20 + Math.cos(a + 0.4) * rr, Math.sin(a + 0.4) * rr); g.fill(); }
+  for (const s of [-1, 1]) { g.save(); g.shadowColor = "#ffea00"; g.shadowBlur = 12; circle(g, -6, s * 22, 4.5); g.fillStyle = "#ffe14a"; g.fill(); circle(g, -5, s * 22, 2); g.fillStyle = "#000"; g.fill(); g.restore(); }
+  g.restore();
+  g.restore();
+}
+
+// gulls (shore) and meteors (moon) share the same "shadow warns you" idea
+function drawGull(gl, g, t) {
+  if (gl.kind !== "meteor") return drawGullBase(gl, g, t);
+  const k = Math.min(1, gl.t / gl.dur);
+  if (gl.t >= gl.dur) {                       // impact flash
+    const a = 1 - (gl.t - gl.dur) / 0.5;
+    g.save(); g.globalCompositeOperation = "lighter"; circle(g, gl.x, gl.y, 70 * (1.2 - a * 0.4));
+    g.fillStyle = radial(g, gl.x, gl.y, 70, [`rgba(255,200,80,${a * 0.8})`, "rgba(255,80,0,0)"], 0, 0); g.fill(); g.restore();
+    return;
+  }
+  g.save(); g.fillStyle = `rgba(30,10,0,${0.1 + k * 0.3})`; g.beginPath(); g.ellipse(gl.x, gl.y, 20 + k * 40, 13 + k * 26, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = `rgba(255,90,40,${0.3 + 0.5 * k * (Math.sin(t * 20) * 0.5 + 0.5)})`; g.lineWidth = 2.5; g.setLineDash([6, 6]);
+  g.beginPath(); g.ellipse(gl.x, gl.y, 62, 42, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); g.restore();
+  const mx = lerp(gl.sx, gl.x, k * k), my = lerp(gl.sy, gl.y, k * k), a = Math.atan2(gl.y - gl.sy, gl.x - gl.sx);
+  g.save(); g.globalCompositeOperation = "lighter";
+  const tx = mx - Math.cos(a) * 90, ty = my - Math.sin(a) * 90, gr = g.createLinearGradient(mx, my, tx, ty);
+  gr.addColorStop(0, "rgba(255,220,120,.9)"); gr.addColorStop(1, "rgba(255,60,0,0)");
+  g.strokeStyle = gr; g.lineWidth = 16; g.lineCap = "round"; g.beginPath(); g.moveTo(mx, my); g.lineTo(tx, ty); g.stroke();
+  g.restore();
+  g.save(); g.translate(mx, my); g.rotate(t * 4);
+  g.beginPath(); for (let i = 0; i <= 8; i++) { const aa = i / 8 * Math.PI * 2, rr = 13 * (0.8 + ((i * 7) % 5) / 12); i ? g.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr) : g.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+  g.closePath(); strokeFill(g, radial(g, 0, 0, 13, ["#c9b8a6", "#7d6a58", "#3a2d22"]), "#1a120c", 2);
+  g.restore();
+}
+
+// ---------------------------------------------------------------- moon + mars floors
+function buildFloor(z) {
+  const Z = ZONES[z];
+  if (Z.kind !== "moon" && Z.kind !== "mars") return buildFloorBase(z);
+  const r = seeded(z * 977 + 3), moon = Z.kind === "moon";
+  const c = makeCanvas(Z.w * FLOOR_RES, Z.h * FLOOR_RES), g = c.getContext("2d");
+  g.scale(FLOOR_RES, FLOOR_RES);
+  const bg = g.createLinearGradient(0, 0, Z.w * 0.3, Z.h);
+  bg.addColorStop(0, moon ? "#a9adb6" : "#e07a3e"); bg.addColorStop(1, moon ? "#6f737d" : "#9a3a14");
+  g.fillStyle = bg; g.fillRect(0, 0, Z.w, Z.h);
+  for (let i = 0; i < 70; i++) { const x = r() * Z.w, y = r() * Z.h, rr = 60 + r() * 220;
+    circle(g, x, y, rr); g.fillStyle = radial(g, x, y, rr, [r() < 0.5 ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.09)", "rgba(0,0,0,0)"], 0, 0); g.fill(); }
+  if (!moon) { g.strokeStyle = "rgba(255,200,150,.12)"; g.lineWidth = 3;
+    for (let i = 0; i < 160; i++) { const x = r() * Z.w, y = r() * Z.h, L = 30 + r() * 90; g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + L * 0.3, y - 7, x + L * 0.7, y + 7, x + L, y); g.stroke(); } }
+  const crater = (x, y, rr) => {
+    g.save(); g.translate(x, y);
+    g.beginPath(); g.ellipse(0, 0, rr, rr * 0.82, 0, 0, Math.PI * 2); g.fillStyle = moon ? "rgba(40,42,52,.35)" : "rgba(70,20,5,.35)"; g.fill();
+    g.beginPath(); g.ellipse(rr * 0.12, rr * 0.12, rr * 0.85, rr * 0.68, 0, 0, Math.PI * 2); g.fillStyle = moon ? "rgba(30,32,40,.25)" : "rgba(60,15,0,.25)"; g.fill();
+    g.beginPath(); g.ellipse(0, 0, rr, rr * 0.82, 0, 0.3, Math.PI * 1.1); g.strokeStyle = "rgba(255,255,255,.28)"; g.lineWidth = Math.max(2, rr * 0.08); g.stroke();
+    g.beginPath(); g.ellipse(0, 0, rr, rr * 0.82, 0, Math.PI * 1.2, Math.PI * 1.9); g.strokeStyle = "rgba(0,0,0,.25)"; g.stroke();
+    g.restore();
+  };
+  for (let i = 0; i < (moon ? 60 : 22); i++) crater(r() * Z.w, r() * Z.h, 12 + Math.pow(r(), 2) * (moon ? 110 : 80));
+  const rocks = [];
+  const rock = (x, y, rr) => {
+    rocks.push({ x, y, r: rr });
+    g.save(); g.translate(x, y); shadow(g, 8, 10, rr * 1.05, rr * 0.85, 0.3);
+    g.beginPath(); for (let i = 0; i <= 9; i++) { const a = i / 9 * Math.PI * 2, q = rr * (0.8 + r() * 0.25); i ? g.lineTo(Math.cos(a) * q, Math.sin(a) * q) : g.moveTo(Math.cos(a) * q, Math.sin(a) * q); }
+    g.closePath(); strokeFill(g, radial(g, 0, 0, rr, moon ? ["#d7d9de", "#8d919b", "#4a4d56"] : ["#c46a3a", "#7a3216", "#3a1406"]), "rgba(0,0,0,.4)", 3);
+    g.restore();
+  };
+  for (let x = 0; x <= Z.w; x += 70) { rock(x + r() * 30, -20 + r() * 30, 50 + r() * 40); rock(x + r() * 30, Z.h + 20 - r() * 30, 50 + r() * 40); }
+  for (let y = 0; y <= Z.h; y += 70) { rock(-20 + r() * 30, y + r() * 30, 50 + r() * 40); rock(Z.w + 20 - r() * 30, y + r() * 30, 50 + r() * 40); }
+  for (let i = 0; i < 16; i++) rock(150 + r() * (Z.w - 300), 150 + r() * (Z.h - 300), 14 + r() * 30);
+  for (let i = 0; i < 200; i++) { circle(g, r() * Z.w, r() * Z.h, 1.5 + r() * 3); g.fillStyle = moon ? "rgba(60,62,72,.5)" : "rgba(90,30,10,.5)"; g.fill(); }
+  return { canvas: c, rocks };
+}
+
+// =====================================================================
+// PART 3a - GAME RULES: runs, zones, fighting, upgrades, saving progress
 // =====================================================================
 const G = {
   scene: "menu", t: 0, paused: false, audioStarted: false,
   fade: 0, fadeDir: 0, fadeCb: null,
-  buttons: [], hoverId: null,
-  toasts: [], hitstop: 0, slowmo: 0,
+  buttons: [], hoverId: null, _hovered: null,
+  toasts: [], hitstop: 0, slowmo: 0, touchBtn: null,
 };
 let RUN = null;     // the current run (one game from choose screen to ending)
 let W = null;       // the current zone's world
 let P = null;       // the player creature
+const isWater = k => k === "sea" || k === "open" || k === "deep";
+
+// ---------------------------------------------------------------- upgrades
+// MUTATIONS are extra evolution choices (on top of his ATTACK / EAT / DEFENCE)
+const MUTS = {
+  speed:  { name: "SPEED",  col: "#7dfcff", max: 2, desc: ["+15% swim speed", "+30% swim speed"], feat: "Side fins" },
+  reach:  { name: "REACH",  col: "#ffb347", max: 2, desc: ["+25% attack reach", "+50% attack reach"], feat: "Longer bite and vine" },
+  regen:  { name: "REGEN",  col: "#5dff8a", max: 2, desc: ["Heal when not hit for 3s", "Heal twice as fast"], feat: "Healing glow" },
+  dash:   { name: "DASH",   col: "#c9a0ff", max: 2, desc: ["Shift / right-click: dash", "Dash recharges faster"], feat: "Quick burst" },
+  poison: { name: "POISON", col: "#c158ff", max: 2, desc: ["Hits poison: 1 dmg/s", "Poison: 2 dmg/s"], feat: "Poison drips" },
+  magnet: { name: "MAGNET", col: "#ffe066", max: 2, desc: ["Pull in food from far", "Even further"], feat: "Food magnet" },
+};
+// The SHOP sells permanent upgrades for DNA (earned in every run, kept forever)
+const SHOP = [
+  { id: "hp",     name: "Tough Cells",   desc: "+2 max HP",                         cost: [15, 30, 50] },
+  { id: "speed",  name: "Quick Fins",    desc: "+5% swim speed",                    cost: [15, 30, 50] },
+  { id: "start",  name: "Head Start",    desc: "Begin with 15 evolution points",    cost: [30, 60] },
+  { id: "second", name: "Second Chance", desc: "Getting eaten costs 15%, not 30%",  cost: [40] },
+  { id: "lucky",  name: "Lucky DNA",     desc: "+25% DNA from everything",          cost: [40, 80] },
+  { id: "mutant", name: "Born Mutant",   desc: "Start every run with a mutation",   cost: [80] },
+];
+const shopLvl = id => Math.max(0, Math.min(SHOP.find(s => s.id === id).cost.length, +save.shop[id] || 0));
+function buyShop(id) {
+  const it = SHOP.find(s => s.id === id), lvl = shopLvl(id);
+  if (lvl >= it.cost.length || save.dna < it.cost[lvl]) return false;
+  save.dna -= it.cost[lvl]; save.shop[id] = lvl + 1; writeSave();
+  SYN.sparkle(); unlock("shopper");
+  return true;
+}
+// ---------------------------------------------------------------- achievements
+const ACH = [
+  ["evolve", "First Evolution", "Evolve for the first time"],
+  ["mutant", "Mutant", "Get 3 different mutations in one run"],
+  ["shore", "Leg Day", "Walk onto the Shore"],
+  ["apex", "Top of the Food Chain", "Defeat the Apex"],
+  ["moon", "One Small Step", "Reach the Moon"],
+  ["worm", "Worm Slayer", "Defeat the Sand Worm"],
+  ["alpha", "Alpha Hunter", "Defeat 5 Alphas (in total)"],
+  ["untouched", "Untouchable", "Clear a zone without getting hit"],
+  ["glutton", "Glutton", "Eat 500 food (in total)"],
+  ["hunter", "Hunter", "Defeat 100 hunters (in total)"],
+  ["nodeath", "Survivor", "Finish without getting eaten"],
+  ["speedrun", "Speed Evolution", "Finish in under 10 minutes"],
+  ["hard", "Hardcore", "Finish on Hard mode"],
+  ["shopper", "Shopper", "Buy a permanent upgrade"],
+  ["collector", "Collector", "Find all 8 forms"],
+];
+function unlock(id) {
+  if (save.ach.includes(id)) return;
+  save.ach.push(id); writeSave();
+  const a = ACH.find(x => x[0] === id);
+  G.achPop = { name: a ? a[1] : id, t: 3.5 };
+  SYN.sparkle();
+}
+function giveDNA(n, x, y) {
+  if (!RUN) return;
+  n = Math.max(1, Math.round(n * (1 + 0.25 * shopLvl("lucky")) * (RUN.hard ? 1.5 : 1)));
+  save.dna += n; RUN.dna += n; writeSave();
+  if (W && x !== undefined) W.popups.push({ x, y: y - 44, text: "+" + n + " DNA", col: "#e7a6ff", t: 1.2 });
+}
 
 // ---------------------------------------------------------------- scene changes with a fade to black
 function go(cb) { if (G.fadeDir) return; G.fadeDir = 1; G.fadeCb = cb; }
 function tickFade(dt) {
   if (!G.fadeDir) return;
   G.fade += G.fadeDir * dt / 0.35;
-  if (G.fade >= 1 && G.fadeDir === 1) { G.fade = 1; const cb = G.fadeCb; G.fadeCb = null; G.fadeDir = -1; if (cb) cb(); }
+  if (G.fade >= 1 && G.fadeDir === 1) {
+    G.fade = 1; const cb = G.fadeCb; G.fadeCb = null; G.fadeDir = -1;
+    G.buttons = [];                 // BUG FIX: old screen's click areas must not survive a scene change
+    if (cb) cb();
+  }
   if (G.fade <= 0 && G.fadeDir === -1) { G.fade = 0; G.fadeDir = 0; }
 }
 function toast(text, sub, time = 3.2) { G.toasts.push({ text, sub, t: time, max: time }); }
@@ -865,78 +1230,107 @@ const menuPets = {
   meat: { type: "meat", anim: null, t: 0, next: 2 },
   plant: { type: "plant", anim: null, t: 0, next: 3.2 },
 };
+function resetTransient() {     // BUG FIX: nothing from an old run/zone leaks into the next one
+  G.paused = false; G.toasts = []; G.hitstop = 0; G.slowmo = 0; cam.shake = 0; G.hoverId = null;
+}
 function toMenu() {
-  G.scene = "menu"; G.paused = false; RUN = null; W = null; P = null;
+  resetTransient();
+  G.scene = "menu"; RUN = null; W = null; P = null;
+  stopAllSounds();
   if (G.audioStarted) { music("Space Ambience", 0.6); ambience("space"); }
 }
-function toChoose() { G.scene = "choose"; music("Chill", 0.55); ambience("space"); }
+function toChoose() { resetTransient(); RUN = null; W = null; P = null; G.scene = "choose"; stopAllSounds(); music("Chill", 0.55); ambience("space"); }
+function toCollection() { G.scene = "collection"; }
+function toShop() { G.scene = "shop"; }
 function startAudioOnce() {
   if (G.audioStarted) return;
   G.audioStarted = true;
-  if (G.scene === "menu") { music("Space Ambience", 0.6); ambience("space"); }
+  if (["menu", "collection", "shop"].includes(G.scene)) { music("Space Ambience", 0.6); ambience("space"); }
 }
 
 // ---------------------------------------------------------------- a new run
 function newRun(type) {
-  RUN = { type, first: null, stats: { atk: 0, eat: 0, def: 0 }, zone: 0, meter: 0, time: 0, deaths: 0, legs: false };
+  resetTransient();
+  RUN = { type, first: null, evolved: false, stats: { atk: 0, eat: 0, def: 0 },
+          mut: { speed: 0, reach: 0, regen: 0, dash: 0, poison: 0, magnet: 0 },
+          zone: 0, meter: 0, time: 0, deaths: 0, legs: false, helmet: false, hard: !!save.hard, dna: 0, kills: 0 };
+  if (shopLvl("mutant")) { const k = Object.keys(MUTS)[irnd(0, 5)]; RUN.mut[k] = 1; }
   startZone(0);
 }
-function mealGain() { return 1 + Math.ceil(RUN.stats.eat / 2); }   // his EAT form: 2 per meal; EAT 3: 3 per meal
-function maxHp() { return 8 + 3 * RUN.stats.def; }
-function playerRadius() { return 24 * (RUN.stats.eat >= 3 ? 1.12 : 1); }
+function mealGain() { return 1 + Math.ceil(RUN.stats.eat / 2); }   // his EAT form: 2 per meal
+function maxHp() { return 8 + 3 * RUN.stats.def + (RUN.evos || 0) + 2 * shopLvl("hp"); }   // every evolution: +1 max HP
+function playerRadius() { return 24 * (RUN.stats.eat >= 5 ? 1.22 : RUN.stats.eat >= 3 ? 1.12 : 1); }
+function mutCount() { return Object.values(RUN.mut).filter(v => v > 0).length; }
 function startZone(z) {
   stopAllSounds();
-  RUN.zone = z; RUN.meter = 0;
+  resetTransient();
+  RUN.zone = z; RUN.meter = z === 0 ? 15 * shopLvl("start") : 0;
   const Z = ZONES[z];
   W = { z, Z, floor: buildFloor(z), food: [], enemies: [], gulls: [], parts: [], microbes: [], popups: [],
-        foodT: 0, enemyT: Z.enemies.map(e => rnd(e.every[0], e.every[1]) * 0.6), gullT: Z.gulls ? rnd(4, 7) : 0, preyT: 0,
-        boss: null, bossPhase: false, bossDead: 0, deco: [], ambBubT: 0, snow: [] };
+        foodT: 0, enemyT: Z.enemies.map(e => rnd(e.every[0], e.every[1]) * 0.6), gullT: (Z.gulls || Z.meteors) ? rnd(4, 7) : 0, preyT: 0,
+        boss: null, bossPhase: false, bossDead: 0, deco: [], ambBubT: 0, snow: [], alphaDone: false, hits: 0,
+        storm: null, stormT: Z.storms ? rnd(8, 12) : 0, complete: 0, barShown: RUN.meter };
   const r = seeded(z * 51 + 9);
   for (let i = 0; i < 28; i++) W.deco.push({ x: r() * Z.w, y: r() * Z.h, len: 120 + r() * 160, ph: r() * 6, w: 10 + r() * 10 });
   for (let i = 0; i < 90; i++) W.snow.push({ x: Math.random(), y: Math.random(), d: 0.3 + Math.random() * 0.9, s: 1 + Math.random() * 2.2 });
   P = { x: Z.w / 2, y: Z.h / 2 + (Z.kind === "land" ? 120 : 0), vx: 0, vy: 0, ang: 0, hp: maxHp(), inv: 1.5, anim: null,
-        walk: 0, moving: 0, blink: 0, blinkT: 2, dead: 0, flash: 0, moveDelay: z === 0 ? 1.2 : 0, trailT: 0 };
+        walk: 0, moving: 0, blink: 0, blinkT: 2, dead: 0, flash: 0, moveDelay: z === 0 ? 1.2 : 0, trailT: 0,
+        dashT: 0, dashCd: 0, ghosts: [], safeT: 0 };
   for (let i = 0; i < Z.startFood; i++) spawnFood(true);
-  if (Z.kind !== "land") for (let i = 0; i < 7; i++) W.microbes.push({ x: rnd(100, Z.w - 100), y: rnd(100, Z.h - 100), ang: rnd(0, 6.3), seed: rnd(0, 9), turn: 0 });
+  if (isWater(Z.kind)) for (let i = 0; i < 7; i++) W.microbes.push({ x: rnd(100, Z.w - 100), y: rnd(100, Z.h - 100), ang: rnd(0, 6.3), seed: rnd(0, 9), turn: 0 });
   cam.x = P.x; cam.y = P.y;
-  G.scene = "play"; G.paused = false;
+  G.scene = "play";
   music(Z.music, 0.45);
   ambience(Z.kind);
-  toast(`Zone ${z + 1}: ${Z.name}`, Z.sub, 3.5);
+  if (z === 3) unlock("shore");
+  if (z === 4) unlock("moon");
+  toast(`Zone ${z + 1}: ${Z.name}`, Z.sub + (RUN.hard ? "  (HARD)" : ""), 3.5);
   const tips = [
     "Steer with the mouse (or WASD). Eat " + (RUN.type === "meat" ? "meat - and bite the yellow fish!" : "plants!"),
     "Hunters! Press E, Space or click to " + attackVerb() + " them.",
     "It is dark down here. Watch for little lights...",
     "Watch the ground - a red ring means a gull is diving!",
+    "Low gravity: you drift! Meteors fall where the red rings are.",
+    "Dust storms push you around. Fill the meter to wake the Sand Worm...",
   ];
-  setTimeout(() => { if (G.scene === "play" && RUN && RUN.zone === z) toast(tips[z], null, 4.5); }, 2600);
+  W.tipT = 2.6; W.tip = tips[z];
 }
 function attackVerb() { return RUN.type === "meat" ? "bite" : RUN.first === "defence" ? "spike" : "swing your vine at"; }
 
 // ---------------------------------------------------------------- spawning
-function freeSpot(minDist) {
-  const Z = W.Z;
-  for (let i = 0; i < 25; i++) {
-    const p = { x: rnd(110, Z.w - 110), y: rnd(Z.kind === "land" ? 160 : 110, Z.h - 110) };
-    if (!P || dist(p, P) > minDist) return p;
+// BUG FIX: spawn spots avoid the player, rocks and (for food) other food
+function freeSpot(minDist, avoidFood) {
+  const Z = W.Z, rocks = (W.floor && W.floor.rocks) || [];
+  let p = null;
+  for (let i = 0; i < 40; i++) {
+    p = { x: rnd(110, Z.w - 110), y: rnd(Z.kind === "land" ? 160 : 110, Z.h - 110) };
+    if (P && dist(p, P) <= minDist) continue;
+    if (rocks.some(k => Math.hypot(k.x - p.x, k.y - p.y) < k.r + 24)) continue;
+    if (avoidFood && W.food.some(f => Math.hypot(f.x - p.x, f.y - p.y) < 36)) continue;
+    return p;
   }
-  return { x: rnd(110, Z.w - 110), y: rnd(110, Z.h - 110) };
+  return p;
 }
 function spawnFood(initial) {
   if (W.food.length >= W.Z.foodCap) return;
-  const p = freeSpot(initial ? 140 : 60);
+  const p = freeSpot(initial ? 140 : 60, true);
   const sprite = RUN.type === "meat" ? "meat" : "plant";
   W.food.push({ sprite, v: irnd(0, 2), x: p.x, y: p.y, rot: rnd(0, 6.3), age: initial ? 1 : 0, glow: W.Z.kind === "deep" });
 }
-function spawnEnemy(type, at) {
-  const D = ENEMY[type], p = at || freeSpot(type === "prey" ? 250 : 620);
-  const e = { type, x: p.x, y: p.y, vx: 0, vy: 0, ang: rnd(0, 6.3), hp: D.hp, state: "roam", timer: 0, flash: 0,
-              goal: freeSpot(0), seed: rnd(0, 9), moving: 0, hitDone: false };
+function spawnEnemy(type, at, alpha) {
+  const D = ENEMY[type], p = at || freeSpot(type === "prey" ? 250 : 620), hard = RUN.hard;
+  const scale = alpha ? 1.55 : 1;
+  const maxHpE = Math.ceil(D.hp * (alpha ? 4 : 1) * (hard ? (D.boss ? 1.2 : 1.5) : 1));
+  const e = { type, x: p.x, y: p.y, vx: 0, vy: 0, ang: rnd(0, 6.3), hp: maxHpE, maxHp: maxHpE, state: "roam", timer: 0, flash: 0,
+              goal: freeSpot(0), seed: rnd(0, 9), moving: 0, hitDone: false, alpha: !!alpha, scale,
+              r: D.r * scale, dmg: D.dmg + (alpha ? 1 : 0) + (hard && !D.prey && !D.boss ? 1 : 0), reward: alpha ? 10 : D.reward,
+              poisonT: 0, poisonDps: 0, poisonAcc: 0 };
+  if (type === "worm") { e.segs = Array.from({ length: 12 }, (_, i) => ({ x: e.x - (i + 1) * 30, y: e.y })); e.burrowT = rnd(5, 7); }
   W.enemies.push(e);
   return e;
 }
 
-// ---------------------------------------------------------------- the creature's animations (procedural, timed like his costumes)
+// ---------------------------------------------------------------- the creature's animations (timed like his costumes)
 function animDef(kind) {
   const plant = RUN.type === "plant", f = RUN.first;
   if (kind === "eat") return { dur: plant ? 0.3 : 0.22, snd: plant ? "Rip" : "Bite", sndAt: 0.1 };
@@ -958,13 +1352,17 @@ function tickAnim(dt) {
   if (a.kind === "attack" && !a.hitDone && a.t >= a.hitAt) { a.hitDone = true; doAttackHit(); }
   if (a.t >= a.dur) P.anim = null;
 }
-// turn the animation clock into drawing values
 function creatureLook(type, stats, opts) {
-  return Object.assign({ type, stats, evolved: !!(RUN && RUN.first) || opts.evolved, legs: false, t: G.t, open: 0.35 + Math.sin(G.t * 3) * 0.08,
-    angry: 0, swing: 0, swingTrail: 0, punch: 0, spikeOut: 0, curl: 0, flash: 0, walk: 0, moving: 0, blink: false }, opts);
+  return Object.assign({ type, stats, evolved: !!(RUN && RUN.evolved), legs: false, helmet: false, mut: null, t: G.t,
+    open: 0.35 + Math.sin(G.t * 3) * 0.08, angry: 0, swing: 0, swingTrail: 0, punch: 0, spikeOut: 0, curl: 0, flash: 0,
+    walk: 0, moving: 0, blink: false }, opts);
+}
+function swingCurve(L, k, h) {
+  L.swing = k < h - 0.08 ? -1.7 * Math.sin(Math.PI / 2 * k / (h - 0.08)) : k < h + 0.15 ? lerp(-1.7, 1.6, (k - h + 0.08) / 0.23) : lerp(1.6, 0, (k - h - 0.15) / (1 - h - 0.15));
+  L.swingTrail = k > h - 0.1 && k < h + 0.3 ? 1 - Math.abs(k - h - 0.05) * 4 : 0;
 }
 function playerLook() {
-  const L = creatureLook(RUN.type, RUN.stats, { legs: RUN.legs, walk: P.walk, moving: P.moving, flash: P.flash, blink: P.blink > 0 });
+  const L = creatureLook(RUN.type, RUN.stats, { legs: RUN.legs, helmet: RUN.helmet, mut: RUN.mut, walk: P.walk, moving: P.moving, flash: P.flash, blink: P.blink > 0 });
   const a = P.anim;
   if (a) {
     const k = a.t / a.dur;
@@ -977,14 +1375,27 @@ function playerLook() {
       if (RUN.type === "meat") {
         L.open = k < h ? lerp(0.4, 1.3, k / h) : lerp(-0.1, 0.35, (k - h) / (1 - h));
         L.punch = Math.max(0, 1 - Math.abs(k - h) * 5);
-      } else if (RUN.first === "defence") {
-        L.spikeOut = Math.max(0, 1 - Math.abs(k - h) * 3.5);
-      } else {
-        L.swing = k < h - 0.08 ? -1.7 * Math.sin(Math.PI / 2 * k / (h - 0.08)) : k < h + 0.15 ? lerp(-1.7, 1.6, (k - h + 0.08) / 0.23) : lerp(1.6, 0, (k - h - 0.15) / (1 - h - 0.15));
-        L.swingTrail = k > h - 0.1 && k < h + 0.3 ? 1 - Math.abs(k - h - 0.05) * 4 : 0;
-      }
+      } else if (RUN.first === "defence") L.spikeOut = Math.max(0, 1 - Math.abs(k - h) * 3.5);
+      else swingCurve(L, k, h);
       if (RUN.stats.atk >= 1) L.punch = Math.max(L.punch, Math.max(0, 1 - Math.abs(k - h) * 5));
     }
+  }
+  return L;
+}
+function tickPet(p, dt) {
+  p.t += dt;
+  if (p.anim) { p.anim.t += dt; if (p.anim.t >= p.anim.dur) p.anim = null; }
+  p.next -= dt;
+  if (p.next <= 0) { p.anim = { kind: "attack", t: 0, dur: p.type === "plant" ? 0.85 : 0.4, hitAt: p.type === "plant" ? 0.55 : 0.2 }; p.next = rnd(2.5, 4.5); }
+}
+function petLook(p, stats, extra) {
+  const L = creatureLook(p.type, stats, Object.assign({ evolved: false }, extra));
+  const a = p.anim;
+  if (a) {
+    const k = a.t / a.dur, h = a.hitAt / a.dur;
+    L.angry = 1;
+    if (p.type === "meat") { L.open = k < h ? lerp(0.4, 1.3, k / h) : lerp(-0.1, 0.35, (k - h) / (1 - h)); L.punch = Math.max(0, 1 - Math.abs(k - h) * 5); }
+    else { swingCurve(L, k, h); L.spikeOut = stats.def >= 1 ? Math.max(0, 1 - Math.abs(k - h) * 3.5) : 0; }
   }
   return L;
 }
@@ -994,152 +1405,226 @@ function attackPressed() {
   if (G.scene !== "play" || G.paused || !P || P.dead) return;
   startAnim("attack");
 }
+function dashPressed() {
+  if (G.scene !== "play" || G.paused || !P || P.dead || !RUN.mut.dash || P.dashCd > 0) return;
+  const m = screenToWorld(mouse.sx, mouse.sy);
+  const a = Math.hypot(m.x - P.x, m.y - P.y) > 10 ? Math.atan2(m.y - P.y, m.x - P.x) : P.ang;
+  P.dashT = 0.22; P.dashCd = RUN.mut.dash >= 2 ? 2.0 : 3.2; P.dashMax = P.dashCd;
+  P.vx = Math.cos(a) * 640; P.vy = Math.sin(a) * 640; P.ang = a;
+  P.inv = Math.max(P.inv, 0.3);
+  SYN.swoosh();
+}
 function attackArea() {
-  const R = playerRadius(), atk = RUN.stats.atk;
+  const R = playerRadius(), atk = RUN.stats.atk, rm = 1 + 0.25 * RUN.mut.reach;
   if (RUN.type === "meat") {
-    const reach = R + 14 + (atk >= 1 ? 6 : 0);
-    return { x: P.x + Math.cos(P.ang) * reach, y: P.y + Math.sin(P.ang) * reach, r: 28 + 5 * atk };
+    const reach = (R + 14 + (atk >= 1 ? 6 : 0)) * (1 + 0.15 * RUN.mut.reach);
+    return { x: P.x + Math.cos(P.ang) * reach, y: P.y + Math.sin(P.ang) * reach, r: (28 + 5 * atk) * rm };
   }
-  if (RUN.first === "defence") return { x: P.x, y: P.y, r: R + 30 + 4 * atk };
-  return { x: P.x, y: P.y, r: R + 44 + 4 * atk };
+  if (RUN.first === "defence") return { x: P.x, y: P.y, r: (R + 30 + 4 * atk) * rm };
+  return { x: P.x, y: P.y, r: (R + 44 + 4 * atk) * rm };
+}
+function enemyDistTo(e, x, y) {        // the worm can be hit anywhere along its body
+  let d = Math.hypot(e.x - x, e.y - y);
+  if (e.segs && e.state !== "burrow") for (const s of e.segs) d = Math.min(d, Math.hypot(s.x - x, s.y - y) + 8);
+  return d;
 }
 function doAttackHit() {
   const A = attackArea(), dmg = 1 + RUN.stats.atk;
   let hits = 0;
   for (const e of W.enemies.slice()) {
-    if (Math.hypot(e.x - A.x, e.y - A.y) < A.r + ENEMY[e.type].r * (e.type === "boss" ? 1.1 : 1)) { damageEnemy(e, dmg, true); hits++; }
+    if (e.state === "burrow") continue;
+    if (enemyDistTo(e, A.x, A.y) < A.r + e.r) {
+      if (RUN.mut.poison && e.hp > 0) { e.poisonT = 3; e.poisonDps = RUN.mut.poison; }
+      damageEnemy(e, dmg, "hit"); hits++;
+    }
   }
-  // the swing / bite leaves a visible slash
   W.parts.push({ type: "ring", x: A.x, y: A.y, r: A.r * 0.6, r1: A.r, life: 0.22, max: 0.22, col: hits ? "255,240,180" : "255,255,255" });
   if (hits) { G.hitstop = 0.05; cam.shake = Math.max(cam.shake, 0.25); }
 }
-function damageEnemy(e, n, fromPlayer) {
+function damageEnemy(e, n, kind) {
+  if (!W.enemies.includes(e) || e.hp <= 0) return;
   const D = ENEMY[e.type];
-  e.hp -= n; e.flash = 0.13;
-  SYN.hit();
-  const a = Math.atan2(e.y - P.y, e.x - P.x);
-  const kb = D.boss ? 120 : 380;
-  e.vx = Math.cos(a) * kb; e.vy = Math.sin(a) * kb;
-  if (!D.boss || e.state !== "lunge") { e.state = "stun"; e.timer = D.boss ? 0.18 : 0.4; }
-  for (let i = 0; i < 8; i++) { const s = rnd(80, 260), b = a + rnd(-1, 1);
-    W.parts.push({ type: "spark", x: e.x - Math.cos(a) * D.r * 0.6, y: e.y - Math.sin(a) * D.r * 0.6, vx: Math.cos(b) * s, vy: Math.sin(b) * s, life: 0.3, max: 0.3, col: "255,250,210" }); }
-  W.popups.push({ x: e.x, y: e.y - D.r - 6, text: "-" + n, col: "#ffe27a", t: 0.7 });
+  e.hp -= n; e.flash = kind === "poison" ? 0.05 : 0.13;
+  if (kind !== "poison") {
+    SYN.hit();
+    const a = Math.atan2(e.y - P.y, e.x - P.x);
+    const kb = D.boss ? 120 : e.alpha ? 220 : 380;
+    e.vx = Math.cos(a) * kb; e.vy = Math.sin(a) * kb;
+    if ((!D.boss || e.state !== "lunge") && e.state !== "burrow") { e.state = "stun"; e.timer = D.boss ? 0.18 : e.alpha ? 0.25 : 0.4; }
+    for (let i = 0; i < 8; i++) { const s = rnd(80, 260), b = a + rnd(-1, 1);
+      W.parts.push({ type: "spark", x: e.x - Math.cos(a) * e.r * 0.6, y: e.y - Math.sin(a) * e.r * 0.6, vx: Math.cos(b) * s, vy: Math.sin(b) * s, life: 0.3, max: 0.3, col: "255,250,210" }); }
+  }
+  W.popups.push({ x: e.x, y: e.y - e.r - 6, text: "-" + n, col: kind === "poison" ? "#d68cff" : "#ffe27a", t: 0.7 });
   if (e.hp <= 0) killEnemy(e);
 }
-const ENEMY_COL = { nibbler: "155,85,255", spikefish: "255,138,31", angler: "90,116,201", crab: "232,64,46", prey: "255,210,31", boss: "192,33,63" };
+const ENEMY_COL = { nibbler: "155,85,255", spikefish: "255,138,31", angler: "90,116,201", crab: "232,64,46", prey: "255,210,31",
+                    boss: "192,33,63", mite: "163,160,200", dustling: "224,82,30", worm: "216,100,47" };
 function killEnemy(e) {
   const D = ENEMY[e.type];
-  W.enemies.splice(W.enemies.indexOf(e), 1);
+  const i = W.enemies.indexOf(e); if (i < 0) return;
+  W.enemies.splice(i, 1);
+  e.hp = 0;
   SYN.kill();
-  const n = D.boss ? 90 : 18;
-  for (let i = 0; i < n; i++) { const a = rnd(0, 6.3), s = rnd(40, D.boss ? 420 : 220);
+  const n = D.boss ? 90 : e.alpha ? 40 : 18;
+  for (let j = 0; j < n; j++) { const a = rnd(0, 6.3), s = rnd(40, D.boss ? 420 : 220);
     W.parts.push({ type: "dot", x: e.x, y: e.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.4, 0.9), max: 0.9, col: ENEMY_COL[e.type], size: rnd(2, D.boss ? 7 : 4.5) }); }
-  W.parts.push({ type: "ring", x: e.x, y: e.y, r: 4, r1: D.r * 2.6, life: 0.4, max: 0.4, col: "255,255,255" });
-  if (D.boss) { bossDefeated(); return; }
+  W.parts.push({ type: "ring", x: e.x, y: e.y, r: 4, r1: e.r * 2.6, life: 0.4, max: 0.4, col: "255,255,255" });
+  if (D.boss) { bossDefeated(e); return; }
   if (D.prey) { sfx("Bite", 0.9); heal(1.5); }
-  if (W.bossPhase) return;
-  addMeter(D.reward, e.x, e.y);
+  else {
+    save.totals.kills++; RUN.kills++;
+    if (save.totals.kills >= 100) unlock("hunter");
+    if (RUN.kills % 4 === 0) giveDNA(1, e.x, e.y);
+  }
+  if (e.alpha) {
+    save.totals.alphas++; giveDNA(5, e.x, e.y);
+    if (save.totals.alphas >= 5) unlock("alpha");
+    toast("ALPHA DEFEATED!", null, 2.2);
+  }
+  addMeter(e.reward, e.x, e.y);
 }
 function heal(n) {
+  if (P.dead) return;
   const before = P.hp;
   P.hp = Math.min(maxHp(), P.hp + n);
-  if (P.hp > before + 0.01 && P.hp - before >= 1) SYN.heal();
+  if (P.hp - before >= 1) SYN.heal();
 }
 function hurtPlayer(dmg, src) {
-  if (P.inv > 0 || P.dead) return;
+  if (P.inv > 0 || P.dead > 0 || G.scene !== "play" || W.complete || W.bossDead > 0) return;   // BUG FIX: no damage during the zone-complete / boss-dead moment
   const d = Math.max(1, dmg - RUN.stats.def);
-  P.hp -= d; P.inv = 1.0; P.flash = 1;
+  P.hp -= d; P.inv = 1.0; P.flash = 1; P.safeT = 0; W.hits++;
   cam.shake = 0.6; G.hitstop = 0.06;
   SYN.hurt();
   if (src) { const a = Math.atan2(P.y - src.y, P.x - src.x); P.vx += Math.cos(a) * 420; P.vy += Math.sin(a) * 420; }
   W.popups.push({ x: P.x, y: P.y - 34, text: "-" + d, col: "#ff5a5a", t: 0.9 });
-  if (src && RUN.stats.def > 0 && W.enemies.includes(src)) damageEnemy(src, RUN.stats.def, false);   // thorns!
+  if (src && RUN.stats.def > 0 && W.enemies.includes(src)) damageEnemy(src, RUN.stats.def, "hit");   // thorns!
   if (P.hp <= 0) playerDie();
 }
 function playerDie() {
-  P.dead = 2.6; P.hp = 0; RUN.deaths++;
+  P.dead = 2.6; P.hp = 0; RUN.deaths++; P.anim = null; P.dashT = 0;
   SYN.die(); cam.shake = 1;
   for (let i = 0; i < 40; i++) { const a = rnd(0, 6.3), s = rnd(40, 260);
     W.parts.push({ type: "dot", x: P.x, y: P.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.5, 1.1), max: 1.1, col: "34,212,85", size: rnd(2, 5) }); }
 }
 function respawn() {
-  P.dead = 0; P.hp = maxHp(); P.inv = 2.2; P.vx = P.vy = 0;
-  if (!W.bossPhase) { const lost = Math.floor(RUN.meter / 2); RUN.meter -= lost; toast("You got eaten!", lost ? `Lost ${lost} evolution points` : "Try again", 2.6); }
-  else { W.boss.hp = Math.min(ENEMY.boss.hp, W.boss.hp + 8); toast("You got eaten!", "The Apex healed a little. Keep going!", 2.6); }
-  W.enemies = W.enemies.filter(e => e.type === "boss" || e.type === "prey" || dist(e, P) > 650);
-  if (W.boss) { const p = freeSpot(600); W.boss.x = p.x; W.boss.y = p.y; W.boss.state = "roam"; }
+  P.dead = 0; P.hp = maxHp(); P.inv = 2.2; P.vx = P.vy = 0; P.safeT = 0; P.flash = 0;
+  if (!W.bossPhase) {
+    const lost = Math.floor(RUN.meter * (shopLvl("second") ? 0.15 : 0.3));
+    RUN.meter -= lost; W.barShown = RUN.meter;
+    toast("You got eaten!", lost ? `Lost ${lost} evolution points` : "Try again", 2.6);
+  } else if (W.boss) {                     // BUG FIX: the boss may already be dead here
+    W.boss.hp = Math.min(W.boss.maxHp, W.boss.hp + Math.round(W.boss.maxHp * 0.05));
+    toast("You got eaten!", "The boss healed a little. Keep going!", 2.6);
+    const p = freeSpot(600); W.boss.x = p.x; W.boss.y = p.y; W.boss.state = "roam";
+    if (W.boss.segs) W.boss.segs.forEach((s, i) => { s.x = p.x - (i + 1) * 30; s.y = p.y; });
+  }
+  W.enemies = W.enemies.filter(e => ENEMY[e.type].boss || e.type === "prey" || e.alpha || dist(e, P) > 650);
+  W.gulls = W.gulls.filter(gl => gl.t >= gl.dur);
 }
 function addMeter(n, x, y) {
-  if (W.bossPhase) return;
+  if (W.bossPhase || W.complete) return;
   RUN.meter += n;
   W.popups.push({ x, y: y - 20, text: "+" + n, col: "#7dfcff", t: 0.9 });
 }
 
-// ---------------------------------------------------------------- the boss: THE APEX (new ending)
+// ---------------------------------------------------------------- bosses: THE APEX (shore) and THE SAND WORM (mars)
 function startBoss() {
+  const Z = W.Z;
   W.bossPhase = true;
-  RUN.meter = ZONES[3].goal;
-  W.enemies = W.enemies.filter(e => e.type !== "crab" || dist(e, P) < 300);
-  const b = spawnEnemy("boss", { x: clamp(P.x, 300, W.Z.w - 300), y: 120 });
+  RUN.meter = Z.goal;
+  W.enemies = W.enemies.filter(e => dist(e, P) < 300 && !e.alpha);
+  const b = spawnEnemy(Z.boss, { x: clamp(P.x + (P.x > Z.w / 2 ? -500 : 500), 300, Z.w - 300), y: Z.boss === "boss" ? 130 : clamp(P.y - 350, 200, Z.h - 200) });
   b.state = "chase"; W.boss = b;
   stopAllSounds(); music("Movie 1", 0.5);
   SYN.roar(); cam.shake = 1.2;
-  toast("THE APEX HAS COME!", "Beat it to become the top of the food chain", 4);
+  toast(ENEMY[Z.boss].name + " HAS COME!", Z.boss === "boss" ? "Beat it to reach the stars" : "Beat it to become the ruler of Mars", 4);
 }
-function bossDefeated() {
+function bossDefeated(e) {
   W.bossDead = 3; G.slowmo = 1.2; cam.shake = 1.5;
   SYN.roar(); sfx("Win", 1);
+  W.bossLast = { hp: 0, maxHp: e.maxHp, type: e.type };   // keep the bar visible while it drains to empty
   W.boss = null;
-  toast("YOU ARE THE APEX!", null, 3);
+  if (e.type === "boss") { unlock("apex"); giveDNA(15, e.x, e.y); toast("YOU ARE THE APEX!", null, 3); }
+  else { unlock("worm"); giveDNA(25, e.x, e.y); toast("THE SAND WORM IS DEFEATED!", null, 3); }
+  W.enemies = W.enemies.filter(x => x.type === "prey");
 }
 
-// ---------------------------------------------------------------- evolving (after zones 1-3)
+// ---------------------------------------------------------------- evolving
 const EVO_TXT = {
   attack: { name: "ATTACK", col: "#ff5a4f", main: "+1 damage on every hit",
-    feat: ["", "Grow brown knobs", "Knobs get bone spikes", "War paint + red eyes"] },
+    feat: ["", "Grow brown knobs", "Knobs get bone spikes", "War paint + red eyes", "Bone horns", "Golden aura"] },
   eat: { name: "EAT", col: "#ffd23f", main: "More per meal, heal more, pull food in",
-    feat: ["", "BIG", "Glowing feelers", "Bigger body"] },
+    feat: ["", "BIG", "Glowing feelers", "Bigger body", "Glowing spots", "Even bigger + golden aura"] },
   defence: { name: "DEFENCE", col: "#5fb8ff", main: "+3 max HP, -1 damage, spikes hurt biters",
-    feat: ["", "White spikes all around", "Armour plates", "Longer spikes"] },
+    feat: ["", "White spikes all around", "Armour plates", "Longer spikes", "Crystal armour", "Golden aura"] },
 };
+const STAT_KEY = { attack: "atk", eat: "eat", defence: "def" };
 function featText(kind, lvl) {
   if (kind === "eat" && lvl === 1) return RUN.type === "meat" ? "Big box jaws" : "Three vines";
-  return EVO_TXT[kind].feat[Math.min(3, lvl)];
+  return EVO_TXT[kind].feat[Math.min(5, lvl)];
+}
+function completeZone() {              // zone done: let the bar show FULL for a moment (bug fix), then evolve / finish
+  if (W.complete) return;
+  W.complete = 1.1;
+  if (W.hits === 0) unlock("untouched");
+  giveDNA(5, P.x, P.y);
+  SYN.sparkle();
 }
 function toEvolve() {
   G.scene = "evolve"; G.evoT = 0; G.evoPicked = null;
   stopAllSounds(); sfx("Triumph", 1); SYN.sparkle();
-  W.food = []; W.enemies = []; W.gulls = [];
+  W.food = []; W.enemies = []; W.gulls = []; W.storm = null;
+  // two random mutations to choose from, besides his three
+  const pool = Object.keys(MUTS).filter(k => RUN.mut[k] < MUTS[k].max);
+  for (let i = pool.length - 1; i > 0; i--) { const j = irnd(0, i); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  G.evoChoices = ["attack", "eat", "defence"].concat(pool.slice(0, 2));
 }
 function pickEvolution(kind) {
-  if (G.evoPicked) return;
+  if (G.evoPicked || G.scene !== "evolve") return;
   G.evoPicked = kind; SYN.click(); SYN.sparkle();
-  if (!RUN.first) RUN.first = kind;
-  RUN.stats[{ attack: "atk", eat: "eat", defence: "def" }[kind]]++;
+  if (STAT_KEY[kind]) {
+    if (!RUN.first) RUN.first = kind;
+    RUN.stats[STAT_KEY[kind]]++;
+  } else RUN.mut[kind] = Math.min(MUTS[kind].max, RUN.mut[kind] + 1);
+  RUN.evolved = true; RUN.evos = (RUN.evos || 0) + 1;
+  unlock("evolve");
+  if (mutCount() >= 3) unlock("mutant");
   const next = RUN.zone + 1;
-  if (next === 3) RUN.legs = true;
+  if (next >= 3) RUN.legs = true;
+  if (next >= 4) RUN.helmet = true;
   go(() => startZone(next));
 }
 
 // ---------------------------------------------------------------- ending
-function finishGame() {
+function runTitle() {
   const s = RUN.stats, m = Math.max(s.atk, s.eat, s.def), tops = ["atk", "eat", "def"].filter(k => s[k] === m);
-  const title = tops.length > 1 ? "THE SURVIVOR" : { atk: "THE HUNTER", eat: "THE GLUTTON", def: "THE FORTRESS" }[tops[0]];
-  const key = RUN.type + ":" + title;
+  return tops.length > 1 ? "THE SURVIVOR" : { atk: "THE HUNTER", eat: "THE GLUTTON", def: "THE FORTRESS" }[tops[0]];
+}
+function finishGame() {
+  const title = runTitle(), key = RUN.type + ":" + title;
+  giveDNA(20);
   const prev = save.best[key];
   const isNew = !save.found.includes(key);
   if (isNew) save.found.push(key);
-  if (prev === undefined || RUN.time < prev) save.best[key] = RUN.time;
-  save.wins = (save.wins || 0) + 1;
+  if (RUN.hard && !save.hardFound.includes(key)) save.hardFound.push(key);
+  if (!(prev >= 0) || RUN.time < prev) save.best[key] = RUN.time;
+  save.wins = (+save.wins || 0) + 1;
   writeSave();
-  RUN.end = { title, key, best: save.best[key], record: prev !== undefined && RUN.time < prev, isNew, t: 0 };
+  if (RUN.deaths === 0) unlock("nodeath");
+  if (RUN.time < 600) unlock("speedrun");
+  if (RUN.hard) unlock("hard");
+  if (save.found.length >= 8) unlock("collector");
+  RUN.end = { title, key, best: save.best[key], record: prev >= 0 && RUN.time < prev, isNew, t: 0 };
+  resetTransient();
   G.scene = "ending";
   stopAllSounds(); music("Dance Energetic", 0.5); ambience("space");
 }
 
 // ---------------------------------------------------------------- input routing
-function onClick(ux, uy, pointerType) {
+function onClick(ux, uy, pointerType, btn) {
   startAudioOnce();
+  if (G.fadeDir) return;                  // BUG FIX: no clicks on a screen that is fading away
+  if (btn === 2) { dashPressed(); return; }
   for (let i = G.buttons.length - 1; i >= 0; i--) {
     const b = G.buttons[i];
     if (ux >= b.x && ux <= b.x + b.w && uy >= b.y && uy <= b.y + b.h) { if (b.click) { SYN.click(); b.click(); } return; }
@@ -1149,20 +1634,24 @@ function onClick(ux, uy, pointerType) {
 function onKey(code) {
   startAudioOnce();
   if (code === "KeyE" || code === "Space" || code === "KeyJ") attackPressed();
+  if (code === "ShiftLeft" || code === "ShiftRight" || code === "KeyK") dashPressed();
   if (code === "KeyM") { save.muted = !save.muted; applyVolume(); }
   if (code === "Minus" || code === "NumpadSubtract") { save.vol = clamp(Math.round((save.vol - 0.2) * 5) / 5, 0, 1); save.muted = false; applyVolume(); }
   if (code === "Equal" || code === "NumpadAdd") { save.vol = clamp(Math.round((save.vol + 0.2) * 5) / 5, 0, 1); save.muted = false; applyVolume(); }
-  if ((code === "KeyP" || code === "Escape") && G.scene === "play") G.paused = !G.paused;
+  if ((code === "KeyP" || code === "Escape") && G.scene === "play" && !G.fadeDir) G.paused = !G.paused;
+  if (code === "Escape" && (G.scene === "collection" || G.scene === "shop")) go(toMenu);
   if (code === "Enter" && G.scene === "menu") go(toChoose);
 }
 function autoPause() { if (G.scene === "play") G.paused = true; }
 function touchOnButton(e) {
-  if (G.scene !== "play") return false;
+  if (G.scene !== "play" || G.paused) return false;
   const r = canvas.getBoundingClientRect();
   const ux = (e.clientX - r.left) * DPR / UI, uy = (e.clientY - r.top) * DPR / UI;
-  return Math.hypot(ux - 90, uy - (VH - 150)) < 60;
+  if (Math.hypot(ux - 90, uy - (VH - 150)) < 60) { G.touchBtn = "attack"; return true; }
+  if (RUN && RUN.mut.dash && Math.hypot(ux - 200, uy - (VH - 110)) < 46) { G.touchBtn = "dash"; return true; }
+  return false;
 }
-function onAttackButton() { attackPressed(); }
+function onAttackButton() { if (G.touchBtn === "dash") dashPressed(); else attackPressed(); }
 
 // ---------------------------------------------------------------- PLAY tick
 function tickPlay(dt) {
@@ -1170,6 +1659,8 @@ function tickPlay(dt) {
   RUN.time += dt;
   P.inv = Math.max(0, P.inv - dt); P.flash = Math.max(0, P.flash - dt * 4);
   P.blinkT -= dt; if (P.blinkT <= 0) { P.blink = 0.12; P.blinkT = rnd(2, 5); } P.blink = Math.max(0, P.blink - dt);
+  P.dashCd = Math.max(0, P.dashCd - dt);
+  if (W.tipT > 0) { W.tipT -= dt; if (W.tipT <= 0) toast(W.tip, null, 4.5); }
 
   if (P.dead > 0) {
     P.dead -= dt;
@@ -1183,95 +1674,118 @@ function tickPlay(dt) {
     if (kx || ky) { dx = kx; dy = ky; d = 999; }
     if (d > 40 && (mouse.moved || kx || ky)) want = clamp((d - 40) / 90, 0, 1);
     if (P.moveDelay > 0) { P.moveDelay -= dt; want = 0; }
-    const speed = (Z.kind === "land" ? 215 : 235) * (P.anim && P.anim.kind === "attack" ? 0.75 : 1);
-    const tvx = d > 0 ? dx / d * speed * want : 0, tvy = d > 0 ? dy / d * speed * want : 0;
-    const k = 1 - Math.exp(-dt * 7);
-    P.vx += (tvx - P.vx) * k; P.vy += (tvy - P.vy) * k;
+    const speed = (isWater(Z.kind) ? 235 : 215) * (1 + 0.15 * RUN.mut.speed) * (1 + 0.05 * shopLvl("speed")) * (P.anim && P.anim.kind === "attack" ? 0.75 : 1);
+    if (P.dashT > 0) {
+      P.dashT -= dt;
+      P.ghosts.push({ x: P.x, y: P.y, ang: P.ang, life: 0.25 });
+    } else {
+      const tvx = d > 0 ? dx / d * speed * want : 0, tvy = d > 0 ? dy / d * speed * want : 0;
+      const k = 1 - Math.exp(-dt * (Z.kind === "moon" ? 2.2 : 7));      // the moon: floaty low gravity
+      P.vx += (tvx - P.vx) * k; P.vy += (tvy - P.vy) * k;
+    }
+    if (W.storm) { const s = W.storm, env = Math.sin(Math.PI * clamp(s.t / s.dur, 0, 1)); P.x += Math.cos(s.ang) * 120 * env * dt; P.y += Math.sin(s.ang) * 120 * env * dt; }
     P.x += P.vx * dt; P.y += P.vy * dt;
     P.x = clamp(P.x, 70, Z.w - 70); P.y = clamp(P.y, 70, Z.h - 70);
     const sp = Math.hypot(P.vx, P.vy);
     P.moving = clamp(sp / 200, 0, 1);
-    if (d > 40) P.ang += angDiff(P.ang, Math.atan2(dy, dx)) * (1 - Math.exp(-dt * 10));
-    P.walk += dt * sp * 0.07;
-    if (Z.kind === "land" && sp > 60 && Math.floor(P.walk / Math.PI) !== Math.floor((P.walk - dt * sp * 0.07) / Math.PI)) SYN.step();
-    // bubble trail / dust
+    if (d > 40 && P.dashT <= 0) P.ang += angDiff(P.ang, Math.atan2(dy, dx)) * (1 - Math.exp(-dt * 10));
+    const oldWalk = P.walk;
+    P.walk += dt * Math.min(sp, 400) * 0.07;
+    if (!isWater(Z.kind) && sp > 60 && Math.floor(P.walk / Math.PI) !== Math.floor(oldWalk / Math.PI)) SYN.step();
     P.trailT -= dt;
     if (sp > 120 && P.trailT <= 0) {
       P.trailT = 0.12;
       const bx = P.x - Math.cos(P.ang) * 30, by = P.y - Math.sin(P.ang) * 30;
-      if (Z.kind === "land") W.parts.push({ type: "dust", x: bx, y: by, vx: rnd(-20, 20), vy: rnd(-20, 20), life: 0.6, max: 0.6, size: rnd(4, 8) });
+      if (!isWater(Z.kind)) W.parts.push({ type: "dust", x: bx, y: by, vx: rnd(-20, 20), vy: rnd(-20, 20), life: 0.6, max: 0.6, size: rnd(4, 8), col: Z.kind });
       else W.parts.push({ type: "bubble", x: bx + rnd(-5, 5), y: by + rnd(-5, 5), vx: rnd(-10, 10), vy: -rnd(20, 50), life: rnd(0.8, 1.4), max: 1.4, size: rnd(2, 4.5) });
     }
+    // regen mutation
+    P.safeT += dt;
+    if (RUN.mut.regen && P.safeT > 3) heal(0.4 * RUN.mut.regen * dt);
     tickAnim(dt);
   }
+  for (const gh of P.ghosts) gh.life -= dt;
+  P.ghosts = P.ghosts.filter(gh => gh.life > 0);
 
-  // --- food: magnet (EAT), eating
-  const R = playerRadius(), mag = RUN.stats.eat > 0 ? 30 + 30 * RUN.stats.eat : 0;
+  // --- food: magnet, eating
+  const R = playerRadius(), mag = (RUN.stats.eat > 0 ? 30 + 30 * RUN.stats.eat : 0) + 70 * RUN.mut.magnet;
   for (let i = W.food.length - 1; i >= 0; i--) {
     const f = W.food[i]; f.age += dt;
     if (P.dead) continue;
     const d = Math.hypot(f.x - P.x, f.y - P.y);
-    if (mag && d < R + mag) { f.x += (P.x - f.x) / d * 170 * dt; f.y += (P.y - f.y) / d * 170 * dt; }
+    if (mag && d < R + mag && d > 1) { f.x += (P.x - f.x) / d * 170 * dt; f.y += (P.y - f.y) / d * 170 * dt; }   // BUG FIX: d > 1 (no divide by zero = NaN)
     if (d < R + 19) {          // reach a bit past his 40px stop distance so food never sits just out of reach
       W.food.splice(i, 1);
-      const gain = mealGain();
-      addMeter(gain, f.x, f.y);
-      heal(0.5 + 0.5 * RUN.stats.eat);
+      addMeter(mealGain(), f.x, f.y);
+      heal((0.5 + 0.5 * RUN.stats.eat) * (RUN.hard ? 0.5 : 1));
+      save.totals.eaten++; if (save.totals.eaten >= 500) unlock("glutton");
       if (!startAnim("eat")) sfx(RUN.type === "plant" ? "Rip" : "Bite", 0.8);
       const col = f.sprite === "meat" ? ["255,143,176", "201,139,85", "255,110,230"][f.v] : ["31,210,74", "155,74,18", "180,186,200"][f.v];
       for (let j = 0; j < 12; j++) { const a = rnd(0, 6.3), s = rnd(30, 150);
         W.parts.push({ type: "dot", x: f.x, y: f.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.3, 0.6), max: 0.6, col, size: rnd(1.5, 3.5) }); }
-      if (Z.kind !== "land") { for (let j = 0; j < 3; j++) W.parts.push({ type: "bubble", x: f.x + rnd(-6, 6), y: f.y, vx: rnd(-15, 15), vy: -rnd(30, 70), life: 1, max: 1, size: rnd(2, 4) }); SYN.bubble(0.05); }
+      if (isWater(Z.kind)) { for (let j = 0; j < 3; j++) W.parts.push({ type: "bubble", x: f.x + rnd(-6, 6), y: f.y, vx: rnd(-15, 15), vy: -rnd(30, 70), life: 1, max: 1, size: rnd(2, 4) }); SYN.bubble(0.05); }
     }
   }
 
-  // --- spawners
-  W.foodT -= dt;
-  if (W.foodT <= 0) { spawnFood(false); W.foodT = rnd(Z.food[0], Z.food[1]); }
-  if (RUN.type === "meat" && Z.prey) {
-    const n = W.enemies.filter(e => e.type === "prey").length;
-    if (n < Z.prey) { W.preyT -= dt; if (W.preyT <= 0) { spawnEnemy("prey"); W.preyT = 4; } }
-  }
-  if (!W.bossPhase) Z.enemies.forEach((sp, i) => {
-    if (RUN.meter < sp.after) return;
-    W.enemyT[i] -= dt;
-    if (W.enemyT[i] <= 0) {
-      W.enemyT[i] = rnd(sp.every[0], sp.every[1]);
-      if (W.enemies.filter(e => e.type === sp.type).length < sp.max) spawnEnemy(sp.type);
+  // --- spawners (stop once the zone is complete)
+  const hardMul = RUN.hard ? 0.75 : 1;
+  if (!W.complete) {
+    W.foodT -= dt;
+    if (W.foodT <= 0) { spawnFood(false); W.foodT = rnd(Z.food[0], Z.food[1]); }
+    if (RUN.type === "meat" && Z.prey) {
+      const n = W.enemies.filter(e => e.type === "prey").length;
+      if (n < Z.prey) { W.preyT -= dt; if (W.preyT <= 0) { spawnEnemy("prey"); W.preyT = 4; } }
     }
-  });
-  if (Z.gulls && !P.dead) {
-    W.gullT -= dt;
-    if (W.gullT <= 0) {
-      W.gullT = rnd(Z.gulls[0], Z.gulls[1]) * (W.bossPhase ? 1.5 : 1);
-      const tx = P.x + P.vx * 0.55, ty = P.y + P.vy * 0.55, side = Math.random() < 0.5 ? -1 : 1;
-      W.gulls.push({ x: tx, y: ty, sx: tx + side * 700, sy: ty - 500, t: 0, dur: 1.5, hit: false });
-      SYN.warn();
+    if (!W.bossPhase) Z.enemies.forEach((sp, i) => {
+      if (RUN.meter < sp.after) return;
+      W.enemyT[i] -= dt;
+      if (W.enemyT[i] <= 0) {
+        W.enemyT[i] = rnd(sp.every[0], sp.every[1]) * hardMul;
+        if (W.enemies.filter(e => e.type === sp.type && !e.alpha).length < sp.max + (RUN.hard ? 1 : 0)) spawnEnemy(sp.type);
+      }
+    });
+    // the mini-boss: an ALPHA shows up when the meter is half full
+    if (!W.alphaDone && !W.bossPhase && Z.alpha && RUN.meter >= Z.goal * 0.5) {
+      W.alphaDone = true;
+      const a = spawnEnemy(Z.alpha, null, true); a.state = "chase";
+      SYN.roar(); toast("An ALPHA " + ENEMY[Z.alpha].name.toUpperCase() + " appears!", "Beat it for a big bonus (+10)", 3);
+    }
+    const hz = Z.gulls || Z.meteors;
+    if (hz && !P.dead) {
+      W.gullT -= dt;
+      if (W.gullT <= 0) {
+        W.gullT = rnd(hz[0], hz[1]) * (W.bossPhase ? 1.5 : 1) * hardMul;
+        const tx = clamp(P.x + P.vx * 0.55, 80, Z.w - 80), ty = clamp(P.y + P.vy * 0.55, 80, Z.h - 80), side = Math.random() < 0.5 ? -1 : 1;
+        W.gulls.push({ kind: Z.meteors ? "meteor" : "gull", x: tx, y: ty, sx: tx + side * rnd(300, 700), sy: ty - 600, t: 0, dur: Z.meteors ? 1.6 : 1.5, hit: false });
+        SYN.warn();
+      }
+    }
+    if (Z.storms) {
+      if (W.storm) { W.storm.t += dt; if (W.storm.t >= W.storm.dur) { W.storm = null; W.stormT = rnd(Z.storms[0], Z.storms[1]); } }
+      else { W.stormT -= dt; if (W.stormT <= 0) { W.storm = { t: 0, dur: 7, ang: rnd(0, 6.3) }; toast("DUST STORM!", null, 2); SYN.swoosh(); } }
     }
   }
 
-  // --- enemies
+  // --- enemies + hazards
   for (const e of W.enemies.slice()) tickEnemy(e, dt);
   for (const gl of W.gulls) {
     gl.t += dt;
     if (!gl.hit && gl.t >= gl.dur) {
-      gl.hit = true; SYN.swoosh();
-      for (let j = 0; j < 14; j++) { const a = rnd(0, 6.3); W.parts.push({ type: "dust", x: gl.x, y: gl.y, vx: Math.cos(a) * 120, vy: Math.sin(a) * 80, life: 0.6, max: 0.6, size: rnd(5, 10) }); }
-      if (Math.hypot(P.x - gl.x, (P.y - gl.y) * 1.5) < 52) hurtPlayer(2, null);
+      gl.hit = true; SYN.swoosh(); cam.shake = Math.max(cam.shake, gl.kind === "meteor" ? 0.5 : 0.2);
+      for (let j = 0; j < 14; j++) { const a = rnd(0, 6.3); W.parts.push({ type: "dust", x: gl.x, y: gl.y, vx: Math.cos(a) * 120, vy: Math.sin(a) * 80, life: 0.6, max: 0.6, size: rnd(5, 10), col: Z.kind }); }
+      if (Math.hypot(P.x - gl.x, (P.y - gl.y) * 1.5) < (gl.kind === "meteor" ? 62 : 52)) hurtPlayer(2 + (RUN.hard ? 1 : 0), null);
     }
   }
   W.gulls = W.gulls.filter(gl => gl.t < gl.dur + 0.5);
 
-  // --- his little swimmers
   for (const m of W.microbes) {
     m.turn += rnd(-1, 1) * dt * 3; m.turn *= 0.98; m.ang += m.turn * dt;
-    if (P && Math.hypot(m.x - P.x, m.y - P.y) < 120) m.ang += angDiff(m.ang, Math.atan2(m.y - P.y, m.x - P.x)) * dt * 3;
+    if (Math.hypot(m.x - P.x, m.y - P.y) < 120) m.ang += angDiff(m.ang, Math.atan2(m.y - P.y, m.x - P.x)) * dt * 3;
     m.x += Math.cos(m.ang) * 45 * dt; m.y += Math.sin(m.ang) * 45 * dt;
     if (m.x < 90 || m.x > Z.w - 90 || m.y < 90 || m.y > Z.h - 90) m.ang += angDiff(m.ang, Math.atan2(Z.h / 2 - m.y, Z.w / 2 - m.x)) * dt * 4;
+    m.x = clamp(m.x, 40, Z.w - 40); m.y = clamp(m.y, 40, Z.h - 40);
   }
-
-  // --- ambient bubbles
-  if (Z.kind !== "land") {
+  if (isWater(Z.kind)) {
     W.ambBubT -= dt;
     if (W.ambBubT <= 0) {
       W.ambBubT = Z.kind === "deep" ? 0.35 : 0.18;
@@ -1280,40 +1794,71 @@ function tickPlay(dt) {
       if (Math.random() < 0.06) SYN.bubble(0.02);
     }
   }
-
   tickParticles(dt);
 
-  // --- level meter checks (his "levelmätare > 49" etc.)
-  if (!W.bossPhase && RUN.meter >= Z.goal && !P.dead) {
-    if (W.z < 3) toEvolve(); else startBoss();
+  // --- meter: smooth bar that always reaches the end (bug fix), then evolve / boss / finish
+  W.barShown += (Math.min(RUN.meter, Z.goal) - W.barShown) * (1 - Math.exp(-dt * 8));
+  if (!W.bossPhase && !W.complete && RUN.meter >= Z.goal && !P.dead) {
+    if (Z.boss) startBoss(); else completeZone();
   }
-  if (W.bossDead > 0) { W.bossDead -= dt; if (W.bossDead <= 0) go(finishGame); }
+  if (W.complete > 0) {
+    W.barShown = lerp(W.barShown, Z.goal, 0.3);
+    W.complete -= dt;
+    if (W.complete <= 0) { W.complete = -1; toEvolve(); }
+  }
+  if (W.bossDead > 0) {
+    W.bossDead -= dt;
+    if (W.bossDead <= 0) {
+      if (W.z === ZONES.length - 1) go(finishGame);
+      else { if (W.hits === 0) unlock("untouched"); giveDNA(5); toEvolve(); }
+    }
+  }
 }
 
 function tickEnemy(e, dt) {
   const D = ENEMY[e.type], Z = W.Z;
   e.flash = Math.max(0, e.flash - dt);
+  if (e.poisonT > 0) {
+    e.poisonT -= dt; e.poisonAcc += e.poisonDps * dt;
+    if (e.poisonAcc >= 1) { e.poisonAcc -= 1; damageEnemy(e, 1, "poison"); if (!W.enemies.includes(e)) return; }
+  }
   const toP = Math.atan2(P.y - e.y, P.x - e.x), dP = Math.hypot(P.x - e.x, P.y - e.y);
   const R = playerRadius();
   let tvx = 0, tvy = 0, face = null, steer = 4;
-  const enraged = D.boss && e.hp < D.hp / 2;
+  const enraged = D.boss && e.hp < e.maxHp / 2, spd = D.speed * (e.alpha ? 1.05 : 1);
+  if (e.type === "worm" && e.state !== "burrow" && e.state !== "lunge" && e.state !== "windup" && !P.dead) {
+    e.burrowT -= dt;
+    if (e.burrowT <= 0) { e.state = "burrow"; e.burrowDur = enraged ? 1.4 : 1.8; e.timer = e.burrowDur; e.tx = P.x; e.ty = P.y; e.burrowT = rnd(6, 9); SYN.roar(); }
+  }
   if (D.prey) {
-    if (dP < D.aggro && !P.dead) { const a = toP + Math.PI + Math.sin(G.t * 3 + e.seed) * 0.5; tvx = Math.cos(a) * D.speed; tvy = Math.sin(a) * D.speed; }
+    if (dP < D.aggro && !P.dead) { const a = toP + Math.PI + Math.sin(G.t * 3 + e.seed) * 0.5; tvx = Math.cos(a) * spd; tvy = Math.sin(a) * spd; }
     else { const a = Math.atan2(e.goal.y - e.y, e.goal.x - e.x); tvx = Math.cos(a) * 60; tvy = Math.sin(a) * 60; if (dist(e, e.goal) < 40) e.goal = freeSpot(0); }
     if (e.state === "stun") { e.timer -= dt; if (e.timer <= 0) e.state = "roam"; tvx = tvy = 0; steer = 2; }
   } else switch (e.state) {
+    case "burrow":                     // the worm tunnels under you, then bursts out
+      e.timer -= dt; steer = 0; e.vx = e.vy = 0;
+      if (e.timer > 0.6) { e.tx += (P.x - e.tx) * (1 - Math.exp(-dt * 3)); e.ty += (P.y - e.ty) * (1 - Math.exp(-dt * 3)); }
+      e.tx = clamp(e.tx, 120, Z.w - 120); e.ty = clamp(e.ty, 120, Z.h - 120);
+      if (e.timer <= 0) {
+        e.x = e.tx; e.y = e.ty; e.state = "recover"; e.timer = 1.0; cam.shake = 0.9; SYN.hit();
+        const a = rnd(0, 6.3); e.ang = a;
+        e.segs.forEach((s, i) => { s.x = e.x - Math.cos(a) * (i + 1) * 26; s.y = e.y - Math.sin(a) * (i + 1) * 26; });
+        for (let j = 0; j < 30; j++) { const b = rnd(0, 6.3), s = rnd(60, 300); W.parts.push({ type: "dust", x: e.x, y: e.y, vx: Math.cos(b) * s, vy: Math.sin(b) * s * 0.7, life: 0.8, max: 0.8, size: rnd(6, 12), col: "mars" }); }
+        if (Math.hypot(P.x - e.x, (P.y - e.y) * 1.5) < 80) hurtPlayer(e.dmg, e);
+      }
+      break;
     case "roam": {
       const a = Math.atan2(e.goal.y - e.y, e.goal.x - e.x);
-      tvx = Math.cos(a) * D.speed * 0.45; tvy = Math.sin(a) * D.speed * 0.45;
+      tvx = Math.cos(a) * spd * 0.45; tvy = Math.sin(a) * spd * 0.45;
       if (dist(e, e.goal) < 50) e.goal = freeSpot(0);
-      if (dP < D.aggro && !P.dead) e.state = "chase";
+      if (dP < D.aggro * (e.alpha ? 1.5 : 1) && !P.dead) e.state = "chase";
       break;
     }
     case "chase": {
-      const sp = D.speed * (enraged ? 1.35 : 1);
+      const sp = spd * (enraged ? 1.35 : 1);
       tvx = Math.cos(toP) * sp; tvy = Math.sin(toP) * sp;
-      if (P.dead || dP > D.aggro * 1.6) e.state = "roam";
-      else if (dP < D.r + R + (D.boss ? 120 : 34)) { e.state = "windup"; e.timer = D.windup * (enraged ? 0.7 : 1); }
+      if (P.dead || dP > D.aggro * 1.6 * (e.alpha ? 1.5 : 1)) e.state = "roam";
+      else if (dP < e.r + R + (D.boss ? 120 : 34)) { e.state = "windup"; e.timer = D.windup * (enraged ? 0.7 : 1); }
       break;
     }
     case "windup":
@@ -1324,26 +1869,37 @@ function tickEnemy(e, dt) {
     case "lunge":
       e.timer -= dt;
       tvx = e.vx; tvy = e.vy; steer = 0;
-      if (!e.hitDone && dP < D.r + R - 4 && !P.dead) { e.hitDone = true; hurtPlayer(D.dmg, e); }
+      if (!e.hitDone && dP < e.r + R - 4 && !P.dead) { e.hitDone = true; hurtPlayer(e.dmg, e); }
       if (e.timer <= 0) { e.state = "recover"; e.timer = D.boss ? 0.7 : 0.9; }
       break;
     case "recover":
       e.timer -= dt;
-      tvx = -Math.cos(toP) * D.speed * 0.4; tvy = -Math.sin(toP) * D.speed * 0.4; face = toP;
+      tvx = -Math.cos(toP) * spd * 0.4; tvy = -Math.sin(toP) * spd * 0.4; face = toP;
       if (e.timer <= 0) e.state = "chase";
       break;
     case "stun":
       e.timer -= dt; steer = 3;
       if (e.timer <= 0) e.state = "chase";
       break;
+    default: e.state = "roam";
   }
   if (steer) { const k = 1 - Math.exp(-dt * steer); e.vx += (tvx - e.vx) * k; e.vy += (tvy - e.vy) * k; }
+  if (W.storm && e.state !== "burrow") { const s = W.storm, env = Math.sin(Math.PI * clamp(s.t / s.dur, 0, 1)); e.x += Math.cos(s.ang) * 60 * env * dt; e.y += Math.sin(s.ang) * 60 * env * dt; }
   e.x += e.vx * dt; e.y += e.vy * dt;
-  const m = 60 + D.r;
+  const m = 60 + e.r;                       // keep everything inside the world
   e.x = clamp(e.x, m, Z.w - m); e.y = clamp(e.y, m, Z.h - m);
+  if (!Number.isFinite(e.x) || !Number.isFinite(e.y)) { e.x = Z.w / 2; e.y = Z.h / 2; e.vx = e.vy = 0; }   // NaN guard
   const sp = Math.hypot(e.vx, e.vy); e.moving = sp > 20;
   const want = face !== null ? face : sp > 8 ? Math.atan2(e.vy, e.vx) : e.ang;
   if (e.state !== "stun") e.ang += angDiff(e.ang, want) * (1 - Math.exp(-dt * 8));
+  if (e.segs && e.state !== "burrow") {      // worm body follows the head like a chain
+    let prev = e;
+    for (const s of e.segs) {
+      const dx = s.x - prev.x, dy = s.y - prev.y, d = Math.hypot(dx, dy) || 1;
+      if (d > 28) { s.x = prev.x + dx / d * 28; s.y = prev.y + dy / d * 28; }
+      prev = s;
+    }
+  }
 }
 
 function tickParticles(dt) {
@@ -1357,7 +1913,6 @@ function tickParticles(dt) {
   for (const p of W.popups) { p.t -= dt; p.y -= 30 * dt; }
   W.popups = W.popups.filter(p => p.t > 0);
 }
-
 function tickCamera(dt) {
   if (!W) return;
   const k = 1 - Math.exp(-dt * 6);
@@ -1374,6 +1929,7 @@ function tick(dt) {
   tickFade(dt);
   for (const t of G.toasts) t.t -= dt;
   G.toasts = G.toasts.filter(t => t.t > 0);
+  if (G.achPop) { G.achPop.t -= dt; if (G.achPop.t <= 0) G.achPop = null; }
   for (const k in menuPets) tickPet(menuPets[k], dt);
   if (G.scene === "play") {
     if (G.paused) return;
@@ -1388,27 +1944,6 @@ function tick(dt) {
   } else if (G.scene === "ending") {
     RUN.end.t += dt;
   }
-}
-function tickPet(p, dt) {
-  p.t += dt;
-  if (p.anim) { p.anim.t += dt; if (p.anim.t >= p.anim.dur) p.anim = null; }
-  p.next -= dt;
-  if (p.next <= 0) { p.anim = { kind: "attack", t: 0, dur: p.type === "plant" ? 0.85 : 0.4, hitAt: p.type === "plant" ? 0.55 : 0.2 }; p.next = rnd(2.5, 4.5); }
-}
-function petLook(p, stats, extra) {
-  const L = creatureLook(p.type, stats, Object.assign({ evolved: false }, extra));
-  const a = p.anim;
-  if (a) {
-    const k = a.t / a.dur, h = a.hitAt / a.dur;
-    L.angry = 1;
-    if (p.type === "meat") { L.open = k < h ? lerp(0.4, 1.3, k / h) : lerp(-0.1, 0.35, (k - h) / (1 - h)); L.punch = Math.max(0, 1 - Math.abs(k - h) * 5); }
-    else {
-      L.swing = k < h - 0.08 ? -1.7 * Math.sin(Math.PI / 2 * k / (h - 0.08)) : k < h + 0.15 ? lerp(-1.7, 1.6, (k - h + 0.08) / 0.23) : lerp(1.6, 0, (k - h - 0.15) / (1 - h - 0.15));
-      L.swingTrail = k > h - 0.1 && k < h + 0.3 ? 1 - Math.abs(k - h - 0.05) * 4 : 0;
-      L.spikeOut = stats.def >= 1 ? Math.max(0, 1 - Math.abs(k - h) * 3.5) : 0;
-    }
-  }
-  return L;
 }
 
 // =====================================================================
@@ -1472,19 +2007,20 @@ function drawWorld() {
   }
   if (Z.kind === "land") drawShoreWater();
   // depth haze between the floor and the swimmers
-  const haze = { sea: "rgba(30,150,230,.22)", open: "rgba(10,70,160,.3)", deep: "rgba(2,8,30,.35)", land: null }[Z.kind];
+  const haze = { sea: "rgba(30,150,230,.22)", open: "rgba(10,70,160,.3)", deep: "rgba(2,8,30,.35)", land: null, moon: null, mars: "rgba(255,120,60,.06)" }[Z.kind];
   if (haze) { g.fillStyle = haze; g.fillRect(vx, vy, vw + 80, vh + 80); }
   if (Z.kind === "deep") drawDeepJellies();
 
   // shadows, then food, enemies, player
-  const sh = Z.kind === "land" ? [6, 10, 0.28] : [10, 16, 0.16];
+  const sh = !isWater(Z.kind) ? [6, 10, 0.28] : [10, 16, 0.16];
   for (const f of W.food) shadow(g, f.x + sh[0] * 0.5, f.y + sh[1] * 0.5, 12, 8, sh[2] * 0.8);
-  for (const e of W.enemies) { const r = ENEMY[e.type].r * (e.type === "boss" ? 1.4 : 1); shadow(g, e.x + sh[0], e.y + sh[1], r * 1.1, r * 0.75, sh[2]); }
+  for (const e of W.enemies) { if (e.type === "worm") continue; const r = e.r * (e.type === "boss" ? 1.4 : 1); shadow(g, e.x + sh[0], e.y + sh[1], r * 1.1, r * 0.75, sh[2]); }
   if (!P.dead) shadow(g, P.x + sh[0], P.y + sh[1], playerRadius() * 1.1, playerRadius() * 0.8, sh[2]);
   for (const m of W.microbes) drawMicrobe(g, m, t);
   for (const f of W.food) drawFood(g, f, t);
-  for (const p of W.parts) if (p.type === "dust") { g.fillStyle = `rgba(200,170,110,${p.life / p.max * 0.5})`; circle(g, p.x, p.y, p.size * (1.5 - p.life / p.max)); g.fill(); }
+  for (const p of W.parts) if (p.type === "dust") { g.fillStyle = `rgba(${p.col === "moon" ? "185,188,200" : p.col === "mars" ? "190,90,40" : "200,170,110"},${p.life / p.max * 0.5})`; circle(g, p.x, p.y, p.size * (1.5 - p.life / p.max)); g.fill(); }
   for (const e of W.enemies) drawEnemy(g, e, t);
+  drawGhosts(g);
   if (!P.dead && !(P.inv > 0 && Math.floor(P.inv * 12) % 2 === 1 && P.inv < 1.9)) {
     const tilt = Math.sin(t * 9) * 0.06 * P.moving;
     drawCreature(g, P.x, P.y, P.ang + tilt, 1, playerLook());
@@ -1497,6 +2033,8 @@ function drawWorld() {
   drawForeground();
   if (Z.kind === "deep") drawDarkness();
   drawSnow();
+  drawSpaceSky();
+  drawStorm();
 }
 function drawShoreWater() {
   const g = ctx, Z = W.Z, t = G.t;
@@ -1566,7 +2104,7 @@ function drawForeground() {
     }
   }
   // god rays (screen space)
-  if (Z.kind !== "deep") {
+  if (Z.kind === "sea" || Z.kind === "open" || Z.kind === "land") {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "lighter";
     const n = 6;
     for (let i = 0; i < n; i++) {
@@ -1583,7 +2121,7 @@ function drawForeground() {
 function drawSnow() {                           // floating specks with depth
   const g = ctx, Z = W.Z;
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
-  const col = Z.kind === "land" ? "255,250,220" : Z.kind === "deep" ? "150,220,255" : "230,250,255";
+  const col = Z.kind === "moon" ? "220,222,235" : Z.kind === "mars" ? "255,170,120" : Z.kind === "land" ? "255,250,220" : Z.kind === "deep" ? "150,220,255" : "230,250,255";
   for (const s of W.snow) {
     const x = ((s.x * BW - cam.x * ZOOM * s.d + G.t * 6 * DPR) % BW + BW) % BW;
     const y = ((s.y * BH - cam.y * ZOOM * s.d + G.t * (Z.kind === "land" ? -4 : 10) * DPR * s.d) % BH + BH) % BH;
@@ -1643,7 +2181,9 @@ function drawVolume() {
 function drawHUD() {
   setUITransform();
   const g = ctx, Z = W.Z;
-  // health
+  // health (fades if you swim underneath it, so the HUD never hides the action)
+  const psUI = worldToScreen(P.x, P.y); psUI.x /= UI; psUI.y /= UI;
+  g.save(); if (psUI.x < 360 && psUI.y < 190) g.globalAlpha = 0.3;
   panel(18, 18, 300, 62, { r: 20 });
   drawHeart(48, 50, 34, P.hp / maxHp() < 0.34 && Math.sin(G.t * 10) > 0 ? "#ff9aa8" : "#ff3b55");
   const hpw = 200, hx = 78, hy = 38;
@@ -1658,24 +2198,27 @@ function drawHUD() {
     const x = 18 + i * 100, y = 88;
     panel(x, y, 92, 38, { r: 19 });
     statIcon(s, x + 20, y + 19, 20);
-    for (let j = 0; j < 3; j++) { circle(g, x + 44 + j * 15, y + 19, 5); g.fillStyle = RUN.stats[s] > j ? { atk: "#ff5a4f", eat: "#ffd23f", def: "#5fb8ff" }[s] : "rgba(255,255,255,.15)"; g.fill(); }
+    for (let j = 0; j < 5; j++) { circle(g, x + 41 + j * 11, y + 19, 4); g.fillStyle = RUN.stats[s] > j ? { atk: "#ff5a4f", eat: "#ffd23f", def: "#5fb8ff" }[s] : "rgba(255,255,255,.15)"; g.fill(); }
   });
+  g.restore();
   // zone title
   txt(Z.name.toUpperCase(), VW / 2, 34, 24, "#fff", { stroke: "rgba(0,20,60,.6)", lw: 5 });
-  txt(`ZONE ${W.z + 1} / 4`, VW / 2, 60, 14, "rgba(200,235,255,.85)", { weight: 600 });
+  txt(`ZONE ${W.z + 1} / ${ZONES.length}`, VW / 2, 60, 14, "rgba(200,235,255,.85)", { weight: 600 });
   // boss bar
-  if (W.boss) {
+  const BB = W.boss || (W.bossDead > 0 ? W.bossLast : null);
+  if (BB) {
     const bw = Math.min(520, VW - 520), bx = VW / 2 - bw / 2, by = 82;
-    txt("THE APEX", VW / 2, by - 2, 18, "#ffb3c0", { stroke: "#3a0010", lw: 4 });
+    txt(ENEMY[BB.type].name, VW / 2, by - 2, 18, "#ffb3c0", { stroke: "#3a0010", lw: 4 });
     roundRect(g, bx, by + 10, bw, 18, 9); g.fillStyle = "rgba(0,0,0,.55)"; g.fill();
-    roundRect(g, bx, by + 10, Math.max(18, bw * W.boss.hp / ENEMY.boss.hp), 18, 9);
-    const gr = g.createLinearGradient(bx, 0, bx + bw, 0); gr.addColorStop(0, "#ff2a55"); gr.addColorStop(1, "#ff8a3d"); g.fillStyle = gr; g.fill();
+    if (BB.hp > 0) { roundRect(g, bx, by + 10, Math.max(18, bw * BB.hp / BB.maxHp), 18, 9);
+    const gr = g.createLinearGradient(bx, 0, bx + bw, 0); gr.addColorStop(0, "#ff2a55"); gr.addColorStop(1, "#ff8a3d"); g.fillStyle = gr; g.fill(); }
     roundRect(g, bx, by + 10, bw, 18, 9); g.strokeStyle = "#3a0010"; g.lineWidth = 2.5; g.stroke();
   }
   // his level meter (levelmätare), now an evolution bar
   const mw = Math.min(620, VW - 520), mx = VW / 2 - mw / 2, my = VH - 58;
+  g.save(); if (psUI.y > my - 70 && Math.abs(psUI.x - VW / 2) < mw / 2 + 40) g.globalAlpha = 0.3;
   panel(mx - 16, my - 30, mw + 32, 68, { r: 24 });
-  const mk = clamp(RUN.meter / Z.goal, 0, 1);
+  const mk = W.bossPhase ? 1 : clamp(W.barShown / Z.goal + (W.complete ? 0.002 : 0), 0, 1);
   roundRect(g, mx, my, mw, 22, 11); g.fillStyle = "rgba(0,0,0,.5)"; g.fill();
   if (mk > 0) {
     g.save(); roundRect(g, mx, my, Math.max(22, mw * mk), 22, 11); g.clip();
@@ -1685,10 +2228,12 @@ function drawHUD() {
     g.restore();
   }
   txt(`LEVEL ${W.z + 1}`, mx, my - 13, 16, "#7dfcff", { align: "left", weight: 700 });
-  txt(W.bossPhase ? "DEFEAT THE APEX!" : "EVOLUTION", VW / 2, my - 13, 14, "rgba(220,250,255,.9)", { weight: 600 });
+  txt(W.bossPhase ? "DEFEAT " + ENEMY[Z.boss].name + "!" : W.complete ? "ZONE COMPLETE!" : "EVOLUTION", VW / 2, my - 13, 14, "rgba(220,250,255,.9)", { weight: 600 });
   txt(`${Math.min(RUN.meter, Z.goal)} / ${Z.goal}`, mx + mw, my - 13, 16, "#fff", { align: "right" });
+  g.restore();
   // minimap
   const mmw = 200, mmh = mmw * Z.h / Z.w, mmx = VW - mmw - 22, mmy = VH - mmh - 22, s = mmw / Z.w;
+  g.save(); if (psUI.x > mmx - 50 && psUI.y > mmy - 50) g.globalAlpha = 0.28;
   panel(mmx - 6, mmy - 6, mmw + 12, mmh + 12, { r: 14, fill: "rgba(4,12,34,.7)" });
   g.save(); roundRect(g, mmx, mmy, mmw, mmh, 10); g.clip();
   g.globalAlpha = 0.5; g.drawImage(W.floor.canvas, mmx, mmy, mmw, mmh); g.globalAlpha = 1;
@@ -1698,6 +2243,8 @@ function drawHUD() {
   g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 1.5; g.strokeRect(mmx + cam.x * s - vw / 2, mmy + cam.y * s - vh / 2, vw, vh);
   g.save(); g.translate(mmx + P.x * s, mmy + P.y * s); g.rotate(P.ang); g.beginPath(); g.moveTo(7, 0); g.lineTo(-5, -5); g.lineTo(-3, 0); g.lineTo(-5, 5); g.closePath(); g.fillStyle = "#fff"; g.fill(); g.restore();
   g.restore();
+  g.restore();
+  drawHUDExtra();
   drawVolume();
   // pause button
   if (button("pause", VW - 270, 20, 46, 46, "II", () => { G.paused = true; }, { size: 18, col: ["#4a6fa8", "#2c4a7a", "#14254a"] })) {}
@@ -1782,9 +2329,11 @@ function drawMenu() {
   drawCreature(ctx, cx - 300 * Math.min(1, VW / 1280), VH * 0.62 + Math.sin(G.t * 1.5) * 8, Math.sin(G.t * 0.8) * 0.15, k, petLook(menuPets.meat, { atk: 0, eat: 0, def: 0 }));
   drawCreature(ctx, cx + 300 * Math.min(1, VW / 1280), VH * 0.62 + Math.sin(G.t * 1.5 + 2) * 8, Math.PI + Math.sin(G.t * 0.8 + 1) * 0.15, k, petLook(menuPets.plant, { atk: 0, eat: 0, def: 0 }));
   button("play", cx - 130, VH * 0.57, 260, 84, "PLAY", () => { startAudioOnce(); go(toChoose); }, { size: 40 });
-  if (save.found.length) txt(`Forms found: ${save.found.length} / 8`, cx, VH * 0.57 + 120, 18, "#d9f1ff", { weight: 600 });
-  txt("Mouse or WASD to swim  ·  E / Space / Click to attack  ·  P to pause", cx, VH - 26, 15, "rgba(190,215,255,.7)", { weight: 500 });
-  if (!G.audioStarted) txt("click anywhere for sound", cx, VH * 0.57 + 150, 15, `rgba(255,255,255,${0.4 + 0.3 * Math.sin(G.t * 4)})`, { weight: 500 });
+  button("coll", cx - 205, VH * 0.57 + 104, 195, 54, "CREATURES", () => go(toCollection), { size: 21, col: ["#4fb0ff", "#1f6bd6", "#0a2a66"] });
+  button("shop", cx + 10, VH * 0.57 + 104, 195, 54, "UPGRADES", () => go(toShop), { size: 21, col: ["#e07aff", "#a63fd6", "#3a0a52"] });
+  txt(`Forms found ${save.found.length} / 8   ·   ${save.dna} DNA   ·   Trophies ${save.ach.length} / ${ACH.length}`, cx, VH * 0.57 + 186, 17, "#d9f1ff", { weight: 600 });
+  txt("Mouse or WASD to swim  ·  E / Space / Click to attack  ·  Shift / right-click to dash  ·  P to pause", cx, VH - 26, 15, "rgba(190,215,255,.7)", { weight: 500 });
+  if (!G.audioStarted) txt("click anywhere for sound", cx, VH * 0.57 + 214, 15, `rgba(255,255,255,${0.4 + 0.3 * Math.sin(G.t * 4)})`, { weight: 500 });
   drawVolume();
 }
 function drawChoose() {
@@ -1811,12 +2360,15 @@ function drawChoose() {
     button("pick" + c.type, pcx - 100, y + lift + ch - 76, 200, 56, "CHOOSE", () => go(() => newRun(c.type)), { col: c.col });
     G.buttons.push({ x, y, w: cw, h: ch - 90, click: () => go(() => newRun(c.type)) });
   });
+  button("hard", VW / 2 - 140, VH - 76, 280, 54, save.hard ? "HARD MODE: ON" : "HARD MODE: OFF", () => { save.hard = !save.hard; writeSave(); },
+    { size: 20, col: save.hard ? ["#ff6b6b", "#d12a2a", "#4a0808"] : ["#5a6a8a", "#3a4a6a", "#141e33"] });
+  if (save.hard) txt("Tougher hunters, less healing, x1.5 DNA", VW / 2, VH - 92, 14, "#ffb3b3", { weight: 600 });
   button("back", 24, 24, 130, 48, "‹ BACK", () => go(toMenu), { size: 20, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
   drawVolume();
 }
 
 // ---------------------------------------------------------------- EVOLVE screen
-function drawEvolve() {
+function drawEvolveV1() {
   drawWorld();
   setUITransform();
   const g = ctx, t = G.evoT;
@@ -1872,25 +2424,26 @@ function drawEnding() {
   g.globalCompositeOperation = "lighter";
   for (let i = 0; i < 12; i++) { g.rotate(Math.PI / 6); g.beginPath(); g.moveTo(0, 0); g.lineTo(-25, -VH); g.lineTo(25, -VH); g.closePath(); g.fillStyle = "rgba(120,255,200,.05)"; g.fill(); }
   g.restore();
-  const L = creatureLook(RUN.type, RUN.stats, { evolved: true, legs: true, moving: 1, walk: G.t * 7, angry: Math.sin(G.t * 1.3) > 0.7 ? 1 : 0, open: 0.4 + Math.sin(G.t * 4) * 0.3 });
+  const L = creatureLook(RUN.type, RUN.stats, { evolved: true, legs: true, helmet: true, mut: RUN.mut, moving: 1, walk: G.t * 7, angry: Math.sin(G.t * 1.3) > 0.7 ? 1 : 0, open: 0.4 + Math.sin(G.t * 4) * 0.3 });
   drawCreature(g, cx, cy + Math.sin(G.t * 1.7) * 10, -Math.PI / 2 + Math.sin(G.t * 0.9) * 0.2, k, L);
   for (let i = 0; i < 30; i++) {                // confetti sparkles
     const a = i * 2.4 + G.t * 0.5, r = 120 * k / 3.6 + (G.t * 40 + i * 37) % 300;
     g.fillStyle = `hsla(${(i * 47) % 360},90%,70%,${Math.max(0, 1 - r / 420)})`; g.fillRect(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 5, 5);
   }
-  const ty = VH * 0.62;
+  const ty = VH * 0.6;
   g.save(); const s = easeOutBack(Math.min(1, t / 0.6)); g.translate(cx, ty); g.scale(s, s);
   txt("APEX ANIMOL", 0, 0, 74, "#fff", { stroke: "#0a2cff", lw: 12, glow: "#4fe3ff", blur: 26 });
   g.restore();
   txt((RUN.type === "meat" ? "MEAT EATER" : "PLANT EATER") + "  ·  " + E.title, cx, ty + 56, 26, "#9ff7c8", { stroke: "#04301a", lw: 5 });
-  txt("From a tiny cell in the shallow sea to the top of the food chain!", cx, ty + 92, 18, "#d9f1ff", { weight: 500 });
-  txt(`Time ${fmtTime(RUN.time)}   ·   Best ${fmtTime(E.best)}   ·   Eaten ${RUN.deaths}x`, cx, ty + 124, 20, "#fff", { weight: 600 });
+  txt("From a tiny cell in the shallow sea all the way to Mars!", cx, ty + 92, 18, "#d9f1ff", { weight: 500 });
+  txt(`Time ${fmtTime(RUN.time)}   ·   Best ${fmtTime(E.best)}   ·   Eaten ${RUN.deaths}x   ·   +${RUN.dna} DNA${RUN.hard ? "  ·  HARD" : ""}`, cx, ty + 124, 20, "#fff", { weight: 600 });
   const badge = E.isNew ? "NEW FORM FOUND!" : E.record ? "NEW RECORD!" : "";
   if (badge) txt(badge, cx, ty + 156, 22, "#ffe066", { stroke: "#5a3d00", lw: 5 });
   txt(`Forms found: ${save.found.length} / 8  (try other types and evolutions!)`, cx, ty + 184, 16, "rgba(220,240,255,.8)", { weight: 500 });
   if (t > 1.2) {
-    button("again", cx - 230, VH - 100, 210, 64, "PLAY AGAIN", () => go(toChoose), { size: 24 });
-    button("menu", cx + 20, VH - 100, 210, 64, "MAIN MENU", () => go(toMenu), { size: 24, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
+    button("again", cx - 330, VH - 100, 210, 64, "PLAY AGAIN", () => go(toChoose), { size: 24 });
+    button("eshop", cx - 105, VH - 100, 210, 64, "UPGRADES", () => go(toShop), { size: 24, col: ["#e07aff", "#a63fd6", "#3a0a52"] });
+    button("menu", cx + 120, VH - 100, 210, 64, "MAIN MENU", () => go(toMenu), { size: 24, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
   }
   drawVolume();
 }
@@ -1905,6 +2458,9 @@ function draw() {
   else if (G.scene === "play") { drawWorld(); drawHUD(); }
   else if (G.scene === "evolve") { drawEvolve(); drawVolume(); }
   else if (G.scene === "ending") drawEnding();
+  else if (G.scene === "collection") drawCollection();
+  else if (G.scene === "shop") drawShop();
+  drawAchPop();
   if (!G._hovered) G.hoverId = null;
   if (G.fade > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = `rgba(0,0,0,${G.fade})`; ctx.fillRect(0, 0, BW, BH); }
   canvas.style.cursor = G._hovered ? "pointer" : "default";
@@ -1922,6 +2478,207 @@ if (!window.__ANIMOL_TEST) {
   toMenu();
   if (document.fonts && document.fonts.load) document.fonts.load(`700 40px Fredoka`).catch(() => {});
   requestAnimationFrame(t => { last = t; frame(t); });
+}
+
+// =====================================================================
+// PART 3c - NEW SCREENS: evolve (with mutations), collection,
+// upgrade shop, achievement pop-up, space sky, dust storms, HUD extras
+// =====================================================================
+function mutIcon(k, x, y, r, lvl) {
+  const g = ctx, M = MUTS[k];
+  circle(g, x, y, r); g.fillStyle = radial(g, x, y, r, ["#ffffff", M.col, "#1a1030"]); g.fill();
+  g.lineWidth = 2; g.strokeStyle = "rgba(0,0,0,.6)"; g.stroke();
+  txt(M.name[0], x, y + 1, r * 1.1, "#10131f", { weight: 700 });
+  if (lvl > 1) txt("" + lvl, x + r * 0.8, y + r * 0.8, r * 0.75, "#fff", { stroke: "#000", lw: 3 });
+}
+function drawHUDExtra() {
+  const g = ctx;
+  // mutations you have
+  let x = 30;
+  for (const k of Object.keys(MUTS)) {
+    const lvl = RUN.mut[k]; if (!lvl) continue;
+    mutIcon(k, x, 150, 15, lvl);
+    if (k === "dash") {                     // dash recharge ring: fills all the way, then shows READY
+      const f = P.dashCd > 0 ? 1 - P.dashCd / (P.dashMax || 1) : 1;
+      g.beginPath(); g.arc(x, 150, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f);
+      g.lineWidth = 3.5; g.strokeStyle = f >= 1 ? "#c9a0ff" : "rgba(201,160,255,.6)"; g.stroke();
+    }
+    x += 40;
+  }
+  // DNA
+  panel(VW - 210, 74, 190, 38, { r: 19 });
+  drawDNA(VW - 188, 93, 13);
+  txt(`DNA  ${save.dna}`, VW - 115, 94, 18, "#f2c9ff", { weight: 700 });
+  if (RUN.hard) txt("HARD", VW / 2 + 120, 34, 15, "#ff6b6b", { stroke: "#300", lw: 3 });
+  if (isTouch && RUN.mut.dash) {
+    circle(g, 200, VH - 110, 40); g.fillStyle = "rgba(201,160,255,.2)"; g.fill(); g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 3; g.stroke();
+    txt("DASH", 200, VH - 110, 15, "#fff");
+  }
+}
+function drawDNA(x, y, s) {                  // little double-helix icon
+  const g = ctx; g.save(); g.lineWidth = 2.5; g.lineCap = "round";
+  for (const ph of [0, Math.PI]) { g.beginPath(); for (let i = 0; i <= 12; i++) { const yy = y - s + i * s / 6, xx = x + Math.sin(i * 0.55 + ph + G.t * 2) * s * 0.5; i ? g.lineTo(xx, yy) : g.moveTo(xx, yy); } g.strokeStyle = ph ? "#ff8af0" : "#8ad8ff"; g.stroke(); }
+  g.restore();
+}
+function drawGhosts(g) {                    // dash afterimages
+  for (const gh of P.ghosts) { g.save(); g.globalAlpha = gh.life / 0.25 * 0.35; drawCreature(g, gh.x, gh.y, gh.ang, 1, Object.assign(playerLook(), { flash: 0.6 })); g.restore(); }
+}
+function drawSpaceSky() {                   // the moon has Earth in the sky, Mars has the Sun
+  const Z = W.Z; if (Z.kind !== "moon" && Z.kind !== "mars") return;
+  const g = ctx; g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const r = Math.min(BW, BH) * 0.09;
+  if (Z.kind === "moon") { g.globalAlpha = 0.85; drawEarth(g, BW - r * 1.3 - cam.x * ZOOM * 0.01, r * 1.4, r, G.t); }
+  else { g.globalAlpha = 0.6; drawSun(g, r * 0.6 - cam.x * ZOOM * 0.01, r * 0.5, r * 0.8, G.t); }
+  g.restore();
+}
+function drawStorm() {
+  if (!W.storm) return;
+  const s = W.storm, env = Math.sin(Math.PI * clamp(s.t / s.dur, 0, 1)), g = ctx;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = `rgba(200,90,40,${0.38 * env})`; g.fillRect(0, 0, BW, BH);
+  g.strokeStyle = `rgba(255,190,140,${0.35 * env})`; g.lineWidth = 2 * DPR;
+  const c = Math.cos(s.ang), sn = Math.sin(s.ang);
+  for (let i = 0; i < 60; i++) {
+    const x = ((i * 137.5 + G.t * 900 * c) % BW + BW) % BW, y = ((i * 89.3 + G.t * 900 * sn) % BH + BH) % BH;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x - c * 60 * DPR, y - sn * 60 * DPR); g.stroke();
+  }
+  g.restore();
+}
+function drawAchPop() {
+  if (!G.achPop) return;
+  setUITransform();
+  const a = G.achPop, k = Math.min(1, (3.5 - a.t) / 0.3, a.t / 0.4), y = VH - 300 + (1 - k) * 40;
+  ctx.save(); ctx.globalAlpha = clamp(k, 0, 1);
+  panel(VW / 2 - 200, y + 96, 400, 64, { r: 22, fill: "rgba(40,24,6,.92)", line: "#ffd23f", lw: 3 });
+  drawTrophy(VW / 2 - 166, y + 128, 20, true);
+  txt("ACHIEVEMENT UNLOCKED", VW / 2 + 16, y + 114, 13, "#ffd23f", { weight: 700 });
+  txt(a.name, VW / 2 + 16, y + 138, 21, "#fff", { weight: 700 });
+  ctx.restore();
+}
+function drawTrophy(x, y, s, on) {
+  const g = ctx; g.save(); g.translate(x, y); g.scale(s / 20, s / 20);
+  g.beginPath(); g.moveTo(-10, -12); g.lineTo(10, -12); g.quadraticCurveTo(10, 4, 0, 6); g.quadraticCurveTo(-10, 4, -10, -12); g.closePath();
+  strokeFill(g, on ? "#ffd23f" : "#4a4f63", on ? "#6b4a00" : "#23263a", 2);
+  g.fillStyle = on ? "#e0a800" : "#3a3e52"; g.fillRect(-2, 5, 4, 6); g.fillRect(-7, 11, 14, 4);
+  g.beginPath(); g.arc(-11, -6, 5, Math.PI * 0.5, Math.PI * 1.5); g.moveTo(11, -11); g.arc(11, -6, 5, -Math.PI * 0.5, Math.PI * 0.5);
+  g.lineWidth = 2.5; g.strokeStyle = on ? "#ffd23f" : "#4a4f63"; g.stroke();
+  g.restore();
+}
+
+// ---------------------------------------------------------------- EVOLVE screen (his 3 choices + 2 mutations)
+function drawEvolve() {
+  drawWorld();
+  setUITransform();
+  const g = ctx, t = G.evoT;
+  g.fillStyle = `rgba(2,6,24,${Math.min(0.8, t * 1.2)})`; g.fillRect(0, 0, VW, VH);
+  g.save(); g.translate(VW / 2, VH * 0.17); g.rotate(G.t * 0.3); g.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 14; i++) { g.rotate(Math.PI * 2 / 14); g.beginPath(); g.moveTo(0, 0); g.lineTo(-40, -VW); g.lineTo(40, -VW); g.closePath(); g.fillStyle = `rgba(80,180,255,${0.07 * Math.min(1, t * 2)})`; g.fill(); }
+  g.restore();
+  const k = Math.min(1, t / 0.5);
+  g.save(); g.translate(VW / 2, VH * 0.17); g.scale(easeOutBack(k), easeOutBack(k));
+  txt("LEVEL UP!", 0, 0, 92, "#fff", { stroke: "#0a2cff", lw: 16, glow: "#4fe3ff", blur: 30 });
+  g.restore();
+  const next = RUN.zone + 1;
+  const sub = next === 3 ? "Choose how to evolve - and grow LEGS for the shore!" : next === 4 ? "Choose how to evolve - and get a SPACE HELMET. Next stop: the Moon!" : next === 5 ? "Choose how to evolve. Next stop: Mars!" : "Choose how to evolve";
+  if (t > 0.7) txt(sub, VW / 2, VH * 0.17 + 70, 22, "#d9f1ff", { weight: 600 });
+  if (t < 1.4) return;
+  const kinds = G.evoChoices, n = kinds.length, gap = 16;
+  const cw = Math.min(250, (VW - 60) / n - gap), ch = Math.min(430, VH * 0.6);
+  kinds.forEach((kind, i) => {
+    const appear = clamp((t - 1.4 - i * 0.1) / 0.35, 0, 1); if (!appear) return;
+    const x = VW / 2 + (i - (n - 1) / 2) * (cw + gap) - cw / 2, y = VH * 0.3 + (1 - easeOutBack(appear)) * 60;
+    const core = !!STAT_KEY[kind], T = core ? EVO_TXT[kind] : MUTS[kind], col = T.col;
+    const hov = appear >= 1 && mouse.ux >= x && mouse.ux <= x + cw && mouse.uy >= y && mouse.uy <= y + ch;
+    if (hov) G._hovered = kind;
+    if (hov && G.hoverId !== kind) { G.hoverId = kind; SYN.hover(); }
+    g.save(); g.globalAlpha = appear;
+    const yy = y - (hov ? 8 : 0);
+    panel(x, yy, cw, ch, { r: 26, fill: hov ? "rgba(24,44,96,.94)" : "rgba(10,20,52,.9)", line: hov ? col : core ? "rgba(140,200,255,.3)" : "rgba(220,160,255,.35)", lw: hov ? 4 : 2.5 });
+    if (!core) txt("MUTATION", x + cw / 2, yy + 18, 12, "#e2b8ff", { weight: 700 });
+    const stats = Object.assign({}, RUN.stats), mut = Object.assign({}, RUN.mut);
+    let lvl;
+    if (core) { stats[STAT_KEY[kind]]++; lvl = stats[STAT_KEY[kind]]; } else { mut[kind]++; lvl = mut[kind]; }
+    const pcx = x + cw / 2, pcy = yy + ch * 0.3;
+    circle(g, pcx, pcy, cw * 0.38); g.fillStyle = radial(g, pcx, pcy, cw * 0.38, [col + "55", "rgba(0,0,0,0)"], 0, 0); g.fill();
+    const L = creatureLook(RUN.type, stats, { evolved: true, legs: next >= 3, helmet: next >= 4, mut, moving: 0.5, walk: G.t * 8, angry: hov ? 1 : 0 });
+    drawCreature(g, pcx, pcy + Math.sin(G.t * 2 + i) * 5, -0.2 + Math.sin(G.t + i) * 0.15, cw / 125, L);
+    if (core) statIcon(STAT_KEY[kind], pcx, yy + ch * 0.56, 24); else mutIcon(kind, pcx, yy + ch * 0.56, 14, 0);
+    txt(T.name, pcx, yy + ch * 0.64, Math.min(32, cw * 0.14), "#fff", { stroke: "#000", lw: 6 });
+    txt("Level " + lvl, pcx, yy + ch * 0.64 + 28, 15, col, { weight: 700 });
+    txt(core ? featText(kind, lvl) : T.feat, pcx, yy + ch * 0.64 + 54, 16, "#ffffff", { weight: 600 });
+    const lines = core ? T.main.split(", ") : [T.desc[lvl - 1]];
+    lines.forEach((w, j) => txt(w, pcx, yy + ch * 0.64 + 80 + j * 20, 14, "#bcd7f5", { weight: 500 }));
+    g.restore();
+    if (appear >= 1) G.buttons.push({ x, y: yy, w: cw, h: ch, click: () => pickEvolution(kind) });
+  });
+}
+
+// ---------------------------------------------------------------- COLLECTION (forms + achievements)
+const FORM_STATS = { "THE HUNTER": { atk: 4, eat: 1, def: 0 }, "THE GLUTTON": { atk: 0, eat: 4, def: 1 }, "THE FORTRESS": { atk: 1, eat: 0, def: 4 }, "THE SURVIVOR": { atk: 2, eat: 2, def: 1 } };
+function drawCollection() {
+  setUITransform();
+  const g = ctx;
+  drawSpace(g, G.t, mouse.ux / VW - 0.5, mouse.uy / VH - 0.5);
+  txt("CREATURES", VW / 2, 56, 50, "#fff", { stroke: "#0a2cff", lw: 9 });
+  txt(`Forms found ${save.found.length} / 8   ·   Food eaten ${save.totals.eaten}   ·   Hunters beaten ${save.totals.kills}   ·   Wins ${save.wins || 0}`, VW / 2, 98, 16, "#cfe7ff", { weight: 500 });
+  const titles = Object.keys(FORM_STATS), cw = Math.min(170, (VW - 200) / 4 - 14), ch = 150;
+  ["meat", "plant"].forEach((type, row) => {
+    txt(type === "meat" ? "MEAT EATER" : "PLANT EATER", VW / 2 - 2 * (cw + 14) - 14, 130 + row * (ch + 14) + ch / 2, 16, "#9fb4ff", { align: "right", weight: 700 });
+    titles.forEach((title, i) => {
+      const key = type + ":" + title, found = save.found.includes(key);
+      const x = VW / 2 + (i - 2) * (cw + 14) + 7, y = 122 + row * (ch + 14);
+      panel(x, y, cw, ch, { r: 18, fill: found ? "rgba(16,34,80,.85)" : "rgba(6,10,26,.8)", line: found ? "rgba(120,255,200,.5)" : "rgba(140,160,200,.2)" });
+      g.save();
+      if (!found && "filter" in g) g.filter = "brightness(0) opacity(0.55)";
+      const st = FORM_STATS[title];
+      drawCreature(g, x + cw / 2, y + 58, -0.3 + Math.sin(G.t + i + row) * 0.12, 1.25, creatureLook(type, st, { evolved: true, legs: true, helmet: true, moving: 0.4, walk: G.t * 6, t: G.t + i }));
+      g.restore();
+      txt(found ? title : "???", x + cw / 2, y + 112, 16, found ? "#fff" : "#6b7590", { weight: 700 });
+      if (found) txt("Best " + fmtTime(save.best[key] || 0) + (save.hardFound.includes(key) ? "  ★HARD" : ""), x + cw / 2, y + 133, 13, save.hardFound.includes(key) ? "#ff9a9a" : "#a9c6e8", { weight: 500 });
+    });
+  });
+  // achievements
+  const ay = 122 + 2 * (ch + 14) + 20;
+  txt(`ACHIEVEMENTS  ${save.ach.length} / ${ACH.length}`, VW / 2, ay, 22, "#ffd23f", { stroke: "#3a2800", lw: 4 });
+  const cols = 4, aw = Math.min(300, (VW - 60) / cols - 10), ah = 44;
+  ACH.forEach(([id, name, desc], i) => {
+    const on = save.ach.includes(id), cx = VW / 2 + (i % cols - 1.5) * (aw + 10) - aw / 2, cy = ay + 20 + Math.floor(i / cols) * (ah + 6);
+    panel(cx, cy, aw, ah, { r: 14, fill: on ? "rgba(50,34,6,.85)" : "rgba(6,10,26,.75)", line: on ? "rgba(255,210,63,.6)" : "rgba(140,160,200,.2)", lw: 2 });
+    drawTrophy(cx + 24, cy + ah / 2, 15, on);
+    txt(name, cx + 46, cy + 16, 15, on ? "#fff" : "#8a93ab", { align: "left", weight: 700 });
+    txt(desc, cx + 46, cy + 33, 12, on ? "#ffe9a8" : "#6b7590", { align: "left", weight: 500 });
+  });
+  button("cback", 24, 24, 130, 48, "‹ BACK", () => go(toMenu), { size: 20, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
+  drawVolume();
+}
+
+// ---------------------------------------------------------------- UPGRADE SHOP (permanent, paid with DNA)
+function drawShop() {
+  setUITransform();
+  const g = ctx;
+  drawSpace(g, G.t, mouse.ux / VW - 0.5, mouse.uy / VH - 0.5);
+  txt("DNA UPGRADES", VW / 2, 60, 50, "#fff", { stroke: "#7a1fa8", lw: 9 });
+  txt("Earn DNA in every run (zones, alphas, bosses, hunters). Upgrades last forever.", VW / 2, 102, 17, "#e9d4ff", { weight: 500 });
+  panel(VW / 2 - 110, 122, 220, 48, { r: 24, fill: "rgba(40,10,60,.85)", line: "#e7a6ff" });
+  drawDNA(VW / 2 - 76, 146, 15);
+  txt(`${save.dna} DNA`, VW / 2 + 14, 147, 24, "#f8dcff", { weight: 700 });
+  const cols = 3, cw = Math.min(330, (VW - 100) / cols - 16), ch = 190;
+  SHOP.forEach((it, i) => {
+    const lvl = shopLvl(it.id), max = it.cost.length, cost = it.cost[lvl];
+    const x = VW / 2 + (i % cols - 1) * (cw + 16) - cw / 2, y = 196 + Math.floor(i / cols) * (ch + 18);
+    panel(x, y, cw, ch, { r: 22, fill: "rgba(16,14,48,.85)", line: lvl >= max ? "rgba(120,255,200,.6)" : "rgba(220,160,255,.35)" });
+    txt(it.name, x + cw / 2, y + 32, 26, "#fff", { stroke: "#2a0a40", lw: 5 });
+    txt(it.desc, x + cw / 2, y + 66, 15, "#d8c4f0", { weight: 500 });
+    for (let j = 0; j < max; j++) { circle(g, x + cw / 2 + (j - (max - 1) / 2) * 24, y + 98, 8); g.fillStyle = j < lvl ? "#e7a6ff" : "rgba(255,255,255,.15)"; g.fill(); }
+    if (lvl >= max) txt("MAXED", x + cw / 2, y + 148, 22, "#7dffc8", { weight: 700 });
+    else {
+      const can = save.dna >= cost;
+      button("buy" + it.id, x + cw / 2 - 90, y + 124, 180, 50, `BUY  ${cost} DNA`, () => { if (!buyShop(it.id)) SYN.hurt(); },
+        { size: 18, col: can ? ["#e07aff", "#a63fd6", "#3a0a52"] : ["#5a566e", "#3c3a4e", "#1c1a28"] });
+    }
+  });
+  button("sback", 24, 24, 130, 48, "‹ BACK", () => go(toMenu), { size: 20, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
+  drawVolume();
 }
 
 </script>
