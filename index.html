@@ -3,675 +3,1927 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>animol</title>
+<title>ANIMOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-  body { display: flex; align-items: center; justify-content: center; touch-action: none; }
-  canvas { display: block; cursor: default; }
+  html, body { margin: 0; height: 100%; background: #03061a; overflow: hidden; }
+  body { touch-action: none; user-select: none; -webkit-user-select: none; font-family: "Fredoka", sans-serif; }
+  canvas { display: block; position: fixed; inset: 0; }
 </style>
 </head>
 <body>
-<canvas id="stage"></canvas>
+<canvas id="game"></canvas>
 <script>
 "use strict";
 /* =====================================================================
-   animol - remade from Sixten's Scratch game (Scratch id 1056116422)
+   ANIMOL - Sixten's evolution game (first made in Scratch, id 1056116422)
 
-   How the code is laid out:
-   1. DATA      - his costumes/sounds, and every animation from his blocks
-   2. ENGINE    - loading, a tiny Scratch-like sprite drawer, sound, input
-   3. GAME      - the scenes: flag -> menu -> choose -> play -> levelup -> play (lvl 2) -> end
-   4. DRAW      - everything that paints a frame
-   The stage is 480x360 like Scratch, with (0,0) in the middle and y going UP.
+   Everything you see is drawn with code on a <canvas> (no image files):
+   his creatures, food and planets are redrawn from his designs.
+   Only his sounds and music are files (assets/*.wav).
+
+   File map:
+     PART 1  core      - settings, screen + camera, input, sound, saving
+     PART 2  art       - drawing: creatures, food, enemies, planets, worlds
+     PART 3  game      - scenes (menu, choose, play, evolve, ending), HUD, loop
    ===================================================================== */
 
-// ---------------------------------------------------------------- 1. DATA
-// [costume name, asset md5, rotationCenterX, rotationCenterY] (bitmapResolution 2 for all)
-const COSTUMES={
-  "stars":[["klädsel1","e9e57b5741665f26c936ba3a9c63fc87",102,29],["klädsel2","7749f0813fac54a7f092eb23ab06031a",102,29],["klädsel3","524a8d93582b57efb69956592c9cbcb6",102,32],["klädsel4","b40cbe0694131414278bb579f94bcbc3",102,29]],
-  "sign":[["klädsel1","061bf9ddc2d3d1138b5c507a4fa70e00",81,23]],
-  "earth":[["klädsel1","80985623d09e82fac7f649bcc955c57e",12,15]],
-  "mars":[["klädsel1","e749bb6e05c8d064dad7958847143671",11,11]],
-  "moon":[["klädsel1","847cfbffcac24491c2ed26d99ab23dad",12,8]],
-  "sun":[["klädsel1","e4045876834262cf450f6a737bb05fc1",19,26]],
-  "play":[["klädsel2","866194c89bf2b5bcb1f3542a27c8318a",63,33]],
-  "meat eater":[["normal meat","488e86f3df60ba35bac0a21a3a76350c",10,10],["eat1 meat","4227611836e7c4e53e48dd42d0fc51ed",10,10],["eat2 meat","cd82eff1902be5207aa0141fc176145b",10,10],["bite1 meat","4a5a47dfbbfa9b86deb72aba0e9ada1b",10,10],["bite2 meat","41b9822f4d3b2fc1bb9041ec2b01daa3",10,10],["bite3 meat","8bff2b17f206b2ef275629065a17de00",10,10],["bite4 meat","b6ba3af8169bb615e732c97471fef358",10,10],["meat eater upg 2 eat","2df4944b82880ca6f8da6767d485a768",16,10],["meat eater upg 2 eat2","52576b5393c44e4bb76aed67c0989764",16,10],["meat eater upg 2 eat3","cf6b8fb1d98d2ed036ba60991f661edf",16,10],["meat eater upg 2 eat bite1","0ffd85513a43ddae3cd4fcba16ff2bfb",16,10],["meat eater upg 2 eat bite2","c7dad7477e6ee9da0286341554517219",16,10],["meat eater upg 2 eat bite3","2cc757f37178d70d1911922fc433a82a",16,19],["meat eater upg 2 eat bite4","7ddc53fddd4e41d1f8b6080794832413",16,14],["meat eater upg 2 attack","e16ec5293e426b2f77c8aeb706b149e8",16,14],["meat eater upg 2 attack eat1","c1865c8c657a050f340258e2fbcd3039",16,14],["meat eater upg 2 attack eat2","02de57480570cc926fd20091d3e12aef",16,14],["meat eater upg 2 attack2","b9bf23217123f11e5df28ce3eae1de64",16,15],["meat eater upg 2 attack3","3413375256d871cd8197603b5738486e",16,16],["meat eater upg 2 attack1","d07e0394e92659845baa7729a181eb82",16,16],["meat eater upg 2 attack4","c5bdc98bd216283eb526fe2c736c11ce",16,15],["meat eater upg 2 defence","0cadd15dc74fe4ba613af8f3fb724a26",16,12],["meat eater upg 2 defence2","083ffbc9aeb2bbf28e21b84aa7d05218",16,12],["meat eater upg 2 defence3","fe17d83630db3ac00fae899652ebce4a",16,12],["meat eater upg 2 defence bite1","adef1107f53508fe29b68a44d2e4ad10",16,12],["meat eater upg 2 defence bite2","8a8f2eda6c57936d1bb24dce04515da2",16,12],["meat eater upg 2 defence bite3","144195a107fe03773858d5194c5b2bcd",16,12]],
-  "meat chooser":[["klädsel1","488e86f3df60ba35bac0a21a3a76350c",10,10]],
-  "plant chooser":[["klädsel1","65fa1f7200c8980e2e9ada467447e727",10,9]],
-  "plant eater":[["normal plant","65fa1f7200c8980e2e9ada467447e727",10,9],["eat1 plant","0190401c1230c1dbb7af0541d12af7c0",10,9],["eat2 plant","dde17befd4534ab0fc38a21bff3663bc",10,9],["eat3 plant","c41af6f0af6356c15c506722179e85b2",10,9],["swing1","3d348ec869fcb353ac2ca637dc229f5b",10,18],["swing2","5a2f579d34e45c6b9ecd9cd904b20a72",10,11],["swing3","9831c767b2476b2ba1e7f6af168f11f6",10,10],["swing4","7b88f77b92d1d5a3fe3f83670d3aac18",10,9],["swing5","d7e5c6a058f161cdb9dc7ae37354dadd",10,9],["swing6","10edfb7bbfb9d16267517214315ec9f7",10,9],["plant eater upg 2 eat normal","9a0aa21de2e8bc715ae9d038355a8b2c",16,21],["plant eater upg 2 eat1","4fbab9cd2228c63bcc4b76b8cefdb747",16,21],["plant eater upg 2 eat2","9db32769fe415a9ed23c022c2f42f4cf",16,21],["plant eater upg 2 eat3","abc7dcaeea5dc92622ffe962024b6423",16,21],["plant eater upg 2 eat normal2","e187e8e6fdd55b05b5e3236fa034a905",16,28],["plant eater upg 2 eat normal3","0ac72cad8f9b90fc14301c08f23a74bf",16,29],["plant eater upg 2 eat normal5","1f58d3d95b1e175eebcbd3c0b15d5014",16,27],["plant eater upg 2 eat normal4","2f8e6051a8f621b0c9dcaba8c351f65d",16,23],["plant eater upg 2 eat normal6","8a9548a945a8af88653fedfec957a207",16,22],["plant eater upg 2 eat normal7","9a0aa21de2e8bc715ae9d038355a8b2c",16,21],["plant eater upg 2 attack","37c0a87cf7d66ddaa0bf38fe1a2aae2c",16,13],["plant eater upg 2 attack2","a755aa6112e303c6d58b54cccdd0d83f",16,13],["plant eater upg 2 attack3","7aecc6bb05a2bc1aebdb69b00ae82ff6",16,13],["plant eater upg 2 attack4","c3a1e3afe01dd503945d3e73fce304c8",16,13],["plant eater upg 2 attack5","bbfa597d97d51ca8071e2b1aafbe1601",16,14],["plant eater upg 2 attack6","5f40effce0d33d14898f9eab7741c6ac",16,15],["plant eater upg 2 attack7","845b737e2d4dc893f5ca9d8604d51c93",16,15],["plant eater upg 2 attack8","a535954a8fdadaf58221dad2538ac559",16,13],["plant eater upg 2 attack9","9f8098986646bcb04610edc81d4fd081",16,12],["plant eater upg 2 defence","1ba55a8de3e20031174755ce74edc8be",17,12],["plant eater upg 2 defence2","344103c31c62b6fbe2ce31a089a9a442",17,12],["plant eater upg 2 defence3","96553204157feaec63c86a7a5bd189aa",17,12],["plant eater upg 2 defence4","3e799f1e552f8b65405407e3259c5979",17,12],["plant eater upg 2 defence5","2e087c26ed7f0299af257ca1bb8c2ea9",20,12],["plant eater upg 2 defence6","37427be8edcbcc3c662219e4afb9d170",22,12],["plant eater upg 2 defence7","307ab77ee83fd40edc2f99aa0f29f8c1",22,12]],
-  "plant":[["seagrass","c36dbdc848f5645f7673e6d6498101ef",21,13],["tong","2e72eb35e19de1ef63ae145525748e9d",22,13],["mussle","39620e05c58329be33c79a4f2894bb85",9,9]],
-  "meat":[["klädsel1","048c3544f58e5528a73351c30b346923",11,10],["klädsel2","12eeeb4dab5024cb5ffe76ec8b4ffa07",11,10],["klädsel3","accf3d175ff5683788840e10b8541e90",11,10]],
-  "Sprajt1":[["klädsel1","b19640ac811409f7be082beac33a7c70",480,28]],
-  "Sprajt3":[["klädsel1","a9656f4ad0a1590e5fa3257c430350b3",480,35]],
-  "Sprajt4":[["klädsel1","a9a0d149b45749a38fa70578c25be6c3",376,79]],
-  "plant chooser upg 2 eat":[["klädsel1","9a0aa21de2e8bc715ae9d038355a8b2c",16,21]],
-  "plant chooser upg 3 attack":[["klädsel1","37c0a87cf7d66ddaa0bf38fe1a2aae2c",16,13]],
-  "plant chooser upg 2 defence":[["klädsel1","1ba55a8de3e20031174755ce74edc8be",17,12]],
-  "meat chooser upg 2 eat":[["klädsel1","8ce79bafef45ec37457952db4087ad8e",16,10]],
-  "meat chooser upg 2 attack":[["klädsel1","e16ec5293e426b2f77c8aeb706b149e8",16,14]],
-  "meat chooser upg 2 defence":[["klädsel1","0cadd15dc74fe4ba613af8f3fb724a26",16,12]],
-  "Sprajt5":[["klädsel1","2e759cea762372a580685732f65fe25a",6,15],["klädsel2","d9b9695647c5311ee7f228cce65c115a",6,15]],
-};
+// ----------------------------------------------------------- settings
+const FONT = '"Fredoka", "Trebuchet MS", "Segoe UI", sans-serif';
+const DT = 1 / 60;                       // game logic runs 60 times per second
 
-
-const BACKDROPS = {
-  bakgrund1: "38b1374bdf8cf1b105c406161a56f1f7", // black menu
-  bakgrund2: "cf5b270d49cd7deecb9593a2ec808997", // ocean (level 1)
-  bakgrund4: "cf5b270d49cd7deecb9593a2ec808997", // ocean (level 2)
-  Stars:     "47282ff0f7047c6fab9c94b531abf721", // chooser screen
-  Stars2:    "47282ff0f7047c6fab9c94b531abf721", // level-up screen
-};
-
+// His sounds (Scratch library sounds he picked) - same names as in his project
 const SOUNDS = {
-  "Space Ambience":  "6c38602459955e831c06dfd3ae15b611", // menu music (play sprite)
-  "Chill":           "c4e9e84fd9244ca43986c2bdb6669ae8", // after-menu music (eftermenymusik)
-  "Elec Piano Loop": "7b4822ccca655db47de0880bab0e7bd9", // game music (spelmusik)
-  "Techno":          "8700dac70c8e08f4a5d21411980304bb", // level 2 music
+  "Space Ambience":  "6c38602459955e831c06dfd3ae15b611", // menu music
+  "Chill":           "c4e9e84fd9244ca43986c2bdb6669ae8", // choose screen (eftermenymusik)
+  "Elec Piano Loop": "7b4822ccca655db47de0880bab0e7bd9", // zone 1 (spelmusik)
+  "Techno":          "8700dac70c8e08f4a5d21411980304bb", // zone 2
+  "Emotional Piano": "ff112fb206cc7e66494d5fb1de5fa3d3", // zone 3 (deep sea)
+  "Video Game 1":    "9fabe1b3b2e48db4b7ef3f715a2a151e", // zone 4 (shore)
+  "Movie 1":         "d90f25587ab0aa00c1e2ff092cb8f363", // boss
+  "Dance Energetic": "e213e09ed852c621ba87cde7f95eec79", // ending
   "Triumph":         "072f4d9a3dfd2a082d50ff90ac7dc8f2", // LEVEL UP!
   "Win":             "db480f6d5ae6d494dbb76ffb9bd995d5",
   "Bite":            "965be693b97c30305b9a4150d96f7816",
   "Snap":            "e3b224967a2dc06df00eb5fc49df9234",
-  "Low Whoosh":      "a10243da494cd4eaaf10c76a7e91a545", // meat eater's whoosh
-  "Plant Whoosh":    "f2479357fc7cbafa6709d1fff721c9ce", // plant eater's "Low Whoosh"
+  "Low Whoosh":      "a10243da494cd4eaaf10c76a7e91a545",
+  "Plant Whoosh":    "f2479357fc7cbafa6709d1fff721c9ce",
   "Low Whoosh2":     "d092fa57d7b0765d30537a30a077e2f8",
   "Rip":             "a358f845e04f41841f8bde6f599b46d6",
   "pop":             "83a9787d4cb6f3b7632b4ddfebf74367",
 };
 
-// Every creature form (his variable "utveclad speltyp") with the exact
-// animations from his blocks. A step is [costume, seconds, sound-to-play-at-start].
-const FORMS = {
-  "normal meat": {
-    sprite: "meat eater", base: "normal meat", gain: 1, label: "MEAT EATER", attackName: "BITE",
-    eat:    [["eat1 meat", .1], ["eat2 meat", .1, "Bite"]],
-    attack: [["bite1 meat", .1], ["bite2 meat", .1], ["bite3 meat", .1, "Snap"], ["bite4 meat", .1]],
-  },
-  "meat eater upg 2 eat": {
-    sprite: "meat eater", base: "meat eater upg 2 eat", gain: 2, label: "MEAT EATER - EAT", attackName: "BITE",
-    eat:    [["meat eater upg 2 eat2", .1], ["meat eater upg 2 eat3", .1, "Bite"]],
-    attack: [["meat eater upg 2 eat bite1", .1], ["meat eater upg 2 eat bite2", .1],
-             ["meat eater upg 2 eat bite3", .1, "Snap"], ["meat eater upg 2 eat bite4", .1]],
-  },
-  "meat eater upg 2 attack": {
-    sprite: "meat eater", base: "meat eater upg 2 attack", gain: 1, label: "MEAT EATER - ATTACK", attackName: "SLASH",
-    eat:    [["meat eater upg 2 attack eat1", .1], ["meat eater upg 2 attack eat2", .1, "Bite"]],
-    attack: [["meat eater upg 2 attack2", .1], ["meat eater upg 2 attack3", .1],
-             ["meat eater upg 2 attack1", .1, "Low Whoosh"], ["meat eater upg 2 attack4", .1]],
-  },
-  "meat eater upg 2 defence": {
-    sprite: "meat eater", base: "meat eater upg 2 defence", gain: 1, label: "MEAT EATER - DEFENCE", attackName: "BITE",
-    eat:    [["meat eater upg 2 defence2", .1], ["meat eater upg 2 defence3", .1, "Bite"]],
-    attack: [["meat eater upg 2 defence bite1", .1], ["meat eater upg 2 defence bite2", .1],
-             ["meat eater upg 2 defence bite3", .1, "Snap"]],
-  },
-  "normal plant": {
-    sprite: "plant eater", base: "normal plant", gain: 1, label: "PLANT EATER", attackName: "SWING",
-    eat:    [["eat1 plant", .1], ["eat2 plant", .1, "Rip"], ["eat3 plant", .1]],
-    attack: [["swing1", .5], ["swing2", .1], ["swing3", .1, "Plant Whoosh"], ["swing4", .1], ["swing5", .1]],
-  },
-  "plant eater upg 2 eat normal": {
-    sprite: "plant eater", base: "plant eater upg 2 eat normal", gain: 2, label: "PLANT EATER - EAT", attackName: "SWING",
-    eat:    [["plant eater upg 2 eat1", .1], ["plant eater upg 2 eat2", .1, "Rip"], ["plant eater upg 2 eat3", .1]],
-    attack: [["plant eater upg 2 eat normal2", .1], ["plant eater upg 2 eat normal3", .1],
-             ["plant eater upg 2 eat normal5", .1], ["plant eater upg 2 eat normal4", .1, "Plant Whoosh"],
-             ["plant eater upg 2 eat normal6", .1], ["plant eater upg 2 eat normal7", .1]],
-  },
-  "plant eater upg 2 attack": {
-    sprite: "plant eater", base: "plant eater upg 2 attack", gain: 1, label: "PLANT EATER - ATTACK", attackName: "SWING",
-    eat:    [["plant eater upg 2 attack2", .1], ["plant eater upg 2 attack2", .1, "Rip"], ["plant eater upg 2 attack3", .1]],
-    attack: [["plant eater upg 2 attack5", .5], ["plant eater upg 2 attack6", .1],
-             ["plant eater upg 2 attack7", .1, "Plant Whoosh"], ["plant eater upg 2 attack8", .1],
-             ["plant eater upg 2 attack9", .1]],
-  },
-  "plant eater upg 2 defence": {
-    sprite: "plant eater", base: "plant eater upg 2 defence", gain: 1, label: "PLANT EATER - DEFENCE", attackName: "SPIKES",
-    eat:    [["plant eater upg 2 defence2", .1], ["plant eater upg 2 defence3", .1, "Rip"], ["plant eater upg 2 defence4", .1]],
-    attack: [["plant eater upg 2 defence", .1], ["plant eater upg 2 defence5", .1], ["plant eater upg 2 defence6", .1],
-             ["plant eater upg 2 defence7", .1, "Low Whoosh2"]],
-  },
-};
-const FINAL_FORMS = Object.keys(FORMS).filter(k => k.includes("upg"));
+// The four zones. goal = how full his level meter (levelmätare) must get.
+const ZONES = [
+  { name: "Shallow Sea", sub: "Where it all begins", kind: "sea",  goal: 50,  music: "Elec Piano Loop",
+    w: 1900, h: 1250, food: [0.9, 1.8], foodCap: 26, startFood: 16, prey: 2,
+    enemies: [{ type: "nibbler", max: 1, every: [12, 18], after: 8 }] },
+  { name: "Open Sea", sub: "Hunters roam here", kind: "open", goal: 65, music: "Techno",
+    w: 2100, h: 1400, food: [0.8, 1.6], foodCap: 28, startFood: 16, prey: 3,
+    enemies: [{ type: "nibbler", max: 2, every: [9, 14], after: 0 }, { type: "spikefish", max: 2, every: [10, 16], after: 4 }] },
+  { name: "The Deep", sub: "Follow the lights... or don't", kind: "deep", goal: 80, music: "Emotional Piano",
+    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 3,
+    enemies: [{ type: "angler", max: 2, every: [9, 14], after: 3 }, { type: "nibbler", max: 2, every: [8, 12], after: 0 },
+              { type: "spikefish", max: 1, every: [14, 20], after: 10 }] },
+  { name: "The Shore", sub: "Your first steps on land", kind: "land", goal: 100, music: "Video Game 1",
+    w: 2100, h: 1400, food: [0.7, 1.4], foodCap: 30, startFood: 18, prey: 0,
+    enemies: [{ type: "crab", max: 3, every: [6, 10], after: 2 }], gulls: [7, 12] },
+];
 
-// The three level-2 choices for each player type (positions from his chooser sprites)
-const UPGRADES = {
-  meat: [
-    { kind: "attack",  sprite: "meat chooser upg 2 attack",  x: -155, form: "meat eater upg 2 attack" },
-    { kind: "eat",     sprite: "meat chooser upg 2 eat",     x: 0,    form: "meat eater upg 2 eat" },
-    { kind: "defence", sprite: "meat chooser upg 2 defence", x: 155,  form: "meat eater upg 2 defence" },
-  ],
-  plant: [
-    { kind: "attack",  sprite: "plant chooser upg 3 attack",  x: -155, form: "plant eater upg 2 attack" },
-    { kind: "eat",     sprite: "plant chooser upg 2 eat",     x: 0,    form: "plant eater upg 2 eat normal" },
-    { kind: "defence", sprite: "plant chooser upg 2 defence", x: 155,  form: "plant eater upg 2 defence" },
-  ],
+// Enemies (new). hp, speed (units/s), dmg, how far they notice you, evolution points when beaten
+const ENEMY = {
+  nibbler:   { r: 15, hp: 2,  speed: 95,  dmg: 1, aggro: 330, lunge: 360, windup: 0.45, reward: 2 },
+  spikefish: { r: 20, hp: 4,  speed: 100, dmg: 2, aggro: 380, lunge: 380, windup: 0.5,  reward: 3, spiky: true },
+  angler:    { r: 24, hp: 6,  speed: 80,  dmg: 3, aggro: 330, lunge: 460, windup: 0.6,  reward: 4 },
+  crab:      { r: 20, hp: 5,  speed: 105, dmg: 2, aggro: 420, lunge: 380, windup: 0.45, reward: 3 },
+  prey:      { r: 11, hp: 1,  speed: 150, dmg: 0, aggro: 200, reward: 3, prey: true },
+  boss:      { r: 58, hp: 34, speed: 95,  dmg: 3, aggro: 9999, lunge: 620, windup: 0.8, reward: 0, boss: true },
 };
 
-const GOAL = { 1: 50, 2: 65 };   // his checks: levelmätare > 49 (level 1) and > 64 (level 2)
-const STEP = 1 / 30;             // Scratch runs at 30 ticks per second, so we do too
-const BLUE = "#0a2cff";          // the blue of his ANIMOL / PLAY / LEVEL UP! letters
-
-// ---------------------------------------------------------------- 2. ENGINE
-const canvas = document.getElementById("stage");
+// ----------------------------------------------------------- screen + camera
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-let viewScale = 1;                       // backing pixels per stage unit
-
-const COST = {};                         // COST[sprite][costumeName] = {img, cx, cy}
-const BACK = {};                         // BACK[name] = img
-let toLoad = 0, loaded = 0;
-
-function loadImage(md5) {
-  const img = new Image();
-  toLoad++;
-  img.onload = img.onerror = () => { loaded++; };
-  img.src = "assets/" + md5 + ".png";
-  return img;
-}
-const imgCache = {};
-function img(md5) { return imgCache[md5] || (imgCache[md5] = loadImage(md5)); }
-for (const sprite in COSTUMES) {
-  COST[sprite] = {};
-  COSTUMES[sprite].forEach(([name, md5, cx, cy], i) => { COST[sprite][name] = COST[sprite][i] = { img: img(md5), cx, cy }; });
-}
-for (const b in BACKDROPS) BACK[b] = img(BACKDROPS[b]);
+let BW = 0, BH = 0, DPR = 1;             // backing-store size in device pixels
+let ZOOM = 1;                            // device pixels per world unit
+let UI = 1, VW = 1280, VH = 720;         // UI scale and the virtual UI size
+const cam = { x: 0, y: 0, shake: 0 };
 
 function resize() {
-  const k = Math.min(window.innerWidth / 480, window.innerHeight / 360);
-  const dpr = window.devicePixelRatio || 1;
-  canvas.style.width = Math.floor(480 * k) + "px";
-  canvas.style.height = Math.floor(360 * k) + "px";
-  canvas.width = Math.round(480 * k * dpr);
-  canvas.height = Math.round(360 * k * dpr);
-  viewScale = canvas.width / 480;
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  const w = window.innerWidth, h = window.innerHeight;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  BW = canvas.width = Math.max(1, Math.round(w * DPR));
+  BH = canvas.height = Math.max(1, Math.round(h * DPR));
+  ZOOM = Math.min(BW / 1050, BH / 650);  // you always see about 1050 x 650 of the world
+  UI = Math.min(BW / 1280, BH / 720);
+  UI = Math.max(UI, Math.min(BW, BH) / 900 * 0.75);
+  VW = BW / UI; VH = BH / UI;
 }
 window.addEventListener("resize", resize);
 resize();
 
-// Scratch-style drawing: (x, y) is where the costume's rotation center goes,
-// size is a percent like the "set size to" block, dir is Scratch direction (90 = right).
-function drawCostume(c, x, y, size, dir = 90, alpha = 1) {
-  if (!c || !c.img.width) return;
-  const s = size / 100 / 2;              // /2 because his PNGs are bitmapResolution 2
-  ctx.save();
-  ctx.globalAlpha *= alpha;
-  ctx.translate(x, -y);
-  if (dir !== 90) ctx.rotate((dir - 90) * Math.PI / 180);
-  ctx.drawImage(c.img, -c.cx * s, -c.cy * s, c.img.width * s, c.img.height * s);
-  ctx.restore();
+function worldToScreen(x, y) { return { x: (x - cam.x) * ZOOM + BW / 2, y: (y - cam.y) * ZOOM + BH / 2 }; }
+function screenToWorld(sx, sy) { return { x: (sx - BW / 2) / ZOOM + cam.x, y: (sy - BH / 2) / ZOOM + cam.y }; }
+function setWorldTransform() {
+  const sx = cam.shake > 0 ? (Math.random() - 0.5) * cam.shake * 14 : 0, sy = cam.shake > 0 ? (Math.random() - 0.5) * cam.shake * 14 : 0;
+  ctx.setTransform(ZOOM, 0, 0, ZOOM, BW / 2 - cam.x * ZOOM + sx * DPR, BH / 2 - cam.y * ZOOM + sy * DPR);
 }
-// Bounding box (stage coords, y up) of an unrotated costume, for clicks
-function costumeBox(c, x, y, size) {
-  const s = size / 100 / 2;
-  const left = x - c.cx * s, top = y + c.cy * s;
-  return { left, right: left + c.img.width * s, top, bottom: top - c.img.height * s };
-}
-// Rough "radius" of a costume, used for touching checks
-function costumeRadius(c, size) {
-  const s = size / 100 / 2;
-  return Math.min(c.img.width, c.img.height) * s * 0.42;
-}
+function setUITransform() { ctx.setTransform(UI, 0, 0, UI, 0, 0); }
 
-// ---- tiny 5x7 pixel font so text matches his blocky letters
-const FONT = {
-  A:[14,17,17,31,17,17,17],B:[30,17,17,30,17,17,30],C:[14,17,16,16,16,17,14],D:[30,17,17,17,17,17,30],
-  E:[31,16,16,30,16,16,31],F:[31,16,16,30,16,16,16],G:[14,17,16,23,17,17,15],H:[17,17,17,31,17,17,17],
-  I:[14,4,4,4,4,4,14],J:[7,2,2,2,2,18,12],K:[17,18,20,24,20,18,17],L:[16,16,16,16,16,16,31],
-  M:[17,27,21,21,17,17,17],N:[17,17,25,21,19,17,17],O:[14,17,17,17,17,17,14],P:[30,17,17,30,16,16,16],
-  Q:[14,17,17,17,21,18,13],R:[30,17,17,30,20,18,17],S:[15,16,16,14,1,1,30],T:[31,4,4,4,4,4,4],
-  U:[17,17,17,17,17,17,14],V:[17,17,17,17,17,10,4],W:[17,17,17,21,21,21,10],X:[17,17,10,4,10,17,17],
-  Y:[17,17,10,4,4,4,4],Z:[31,1,2,4,8,16,31],
-  0:[14,17,19,21,25,17,14],1:[4,12,4,4,4,4,14],2:[14,17,1,2,4,8,31],3:[31,2,4,2,1,17,14],
-  4:[2,6,10,18,31,2,2],5:[31,16,30,1,1,17,14],6:[6,8,16,30,17,17,14],7:[31,1,2,4,8,8,8],
-  8:[14,17,17,14,17,17,14],9:[14,17,17,15,1,2,12],
-  " ":[0,0,0,0,0,0,0],"!":[4,4,4,4,4,0,4],"/":[1,1,2,4,8,16,16],":":[0,12,12,0,12,12,0],
-  ".":[0,0,0,0,0,12,12],"+":[0,4,4,31,4,4,0],"-":[0,0,0,31,0,0,0],"=":[0,0,31,0,31,0,0],"?":[14,17,1,2,4,0,4],
-};
-function textWidth(str, px) { return str.length * 6 * px - px; }
-// align: 0 = left, 0.5 = center, 1 = right. (x, y) is the top edge in stage coords.
-function pixelText(str, x, y, px, color, align = 0.5, shadow = "rgba(0,0,0,.55)") {
-  str = String(str).toUpperCase();
-  const x0 = x - textWidth(str, px) * align;
-  const pass = (ox, oy, col) => {
-    ctx.fillStyle = col;
-    for (let i = 0; i < str.length; i++) {
-      const g = FONT[str[i]] || FONT["?"];
-      for (let r = 0; r < 7; r++) for (let b = 0; b < 5; b++)
-        if (g[r] & (16 >> b)) ctx.fillRect(x0 + (i * 6 + b) * px + ox, -y + r * px + oy, px, px);
-    }
-  };
-  if (shadow) pass(px * 0.5, px * 0.5, shadow);
-  pass(0, 0, color);
-}
-
-// ---- sound: plain <audio> elements, so it also works when index.html is opened straight from disk
-const AUD = {};
-for (const n in SOUNDS) { const a = new Audio("assets/" + SOUNDS[n] + ".wav"); a.preload = "auto"; AUD[n] = a; }
-let muted = false, musicEl = null, musicName = null;
-const playing = new Set();
-function sfx(name, vol = 1) {
-  if (muted || !AUD[name]) return;
-  const a = AUD[name].cloneNode();
-  a.volume = vol;
-  playing.add(a);
-  a.onended = () => playing.delete(a);
-  const p = a.play(); if (p && p.catch) p.catch(() => {});
-}
-function music(name, vol = 0.6) {
-  if (musicEl) { musicEl.pause(); musicEl = null; }
-  musicName = name;
-  if (!name || muted) return;
-  musicEl = AUD[name].cloneNode();
-  musicEl.loop = true;                    // = his "forever: play sound until done"
-  musicEl.volume = vol;
-  const p = musicEl.play(); if (p && p.catch) p.catch(() => {});
-}
-function stopAllSounds() {               // = Scratch "stop all sounds"
-  music(null);
-  for (const a of playing) a.pause();
-  playing.clear();
-}
-function toggleMute() {
-  muted = !muted;
-  if (muted) { const keep = musicName; stopAllSounds(); musicName = keep; }
-  else if (musicName) music(musicName);
-  try { localStorage.setItem("animol.muted", muted ? "1" : "0"); } catch (e) {}
-}
-try { muted = localStorage.getItem("animol.muted") === "1"; } catch (e) {}
-
-// ---- saving (best times + which final forms you've found)
-let save = { best: {}, found: [] };
-try { const s = JSON.parse(localStorage.getItem("animol.save")); if (s && s.best && s.found) save = s; } catch (e) {}
-function writeSave() { try { localStorage.setItem("animol.save", JSON.stringify(save)); } catch (e) {} }
-
-// ---- input
-const mouse = { x: 0, y: 0, down: false };
+// ----------------------------------------------------------- input
+const mouse = { sx: BW / 2, sy: BH / 2, ux: 0, uy: 0, moved: false };
 let isTouch = false;
-function stagePoint(e) {
+const keys = {};
+function setMouseFromEvent(e) {
   const r = canvas.getBoundingClientRect();
-  return {
-    x: Math.max(-240, Math.min(240, (e.clientX - r.left) / r.width * 480 - 240)),
-    y: Math.max(-180, Math.min(180, 180 - (e.clientY - r.top) / r.height * 360)),
-  };
+  mouse.sx = (e.clientX - r.left) * DPR; mouse.sy = (e.clientY - r.top) * DPR;
+  mouse.ux = mouse.sx / UI; mouse.uy = mouse.sy / UI;
+  mouse.moved = true;
 }
-function inEButton(p) { return isTouch && G.scene === "play" && Math.hypot(p.x - 200, p.y + 120) < 26; }
 canvas.addEventListener("pointermove", e => {
-  const p = stagePoint(e);
-  if (e.pointerType === "touch" && inEButton(p)) return;
-  mouse.x = p.x; mouse.y = p.y;
+  if (e.pointerType === "touch") { isTouch = true; if (touchOnButton(e)) return; }
+  setMouseFromEvent(e);
 });
 canvas.addEventListener("pointerdown", e => {
+  initSynth();
   if (e.pointerType === "touch") isTouch = true;
-  const p = stagePoint(e);
-  if (inEButton(p)) { pressE(); return; }
-  mouse.x = p.x; mouse.y = p.y;
-  click(p.x, p.y);
+  if (e.pointerType === "touch" && touchOnButton(e)) { onAttackButton(); return; }
+  setMouseFromEvent(e);
+  onClick(mouse.ux, mouse.uy, e.pointerType);
 });
+canvas.addEventListener("contextmenu", e => e.preventDefault());
 window.addEventListener("keydown", e => {
+  initSynth();
   if (e.repeat) return;
-  if (e.code === "KeyE" || e.code === "Space") { pressE(); e.preventDefault(); }
-  if (e.code === "KeyM") toggleMute();
+  keys[e.code] = true;
+  onKey(e.code);
+  if (e.code === "Space") e.preventDefault();
 });
+window.addEventListener("keyup", e => { keys[e.code] = false; });
+window.addEventListener("blur", () => { if (typeof autoPause === "function") autoPause(); });
 
-// ---------------------------------------------------------------- 3. GAME
-const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));  // Scratch "pick random" with whole numbers
-const G = {
-  scene: "loading", t: 0,
-  backdrop: "bakgrund1",
-  spelartyp: "meat",                   // "meat" or "plant"
-  utveclad: "normal meat",             // utveclad speltyp: which creature form you are
-  level: 1,
-  levelmätare: 0,                      // the level meter
-  barShown: 0,                         // smoothed meter for the bar
-  player: null, food: [], popups: [], critter: null,
-  planets: [], starCostume: 3, starTimer: 1,
-  levelUpT: 0, playTime: 0, endInfo: null, hintT: 0,
-  hover: null,
-};
+// ----------------------------------------------------------- saving
+let save = { best: {}, found: [], vol: 0.8, muted: false, wins: 0 };
+try {
+  const s = JSON.parse(localStorage.getItem("animol.v2"));
+  if (s && typeof s === "object") save = Object.assign(save, s);
+} catch (e) {}
+function writeSave() { try { localStorage.setItem("animol.v2", JSON.stringify(save)); } catch (e) {} }
+const volume = () => (save.muted ? 0 : save.vol);
 
-// --- flag screen (the green flag: browsers only allow sound after a click)
-function toFlag() { G.scene = "flag"; G.backdrop = "bakgrund1"; }
-
-// --- main menu: his planets wobble around ANIMOL / PLAY
-function planetScript(name, x, y, size, waits, steps) {
-  return { name, x, y, homeX: x, size, waits, steps, phase: 0, timer: waits[0](), drawX: x };
+// ----------------------------------------------------------- his sounds (<audio> works even from file://)
+const AUD = {};
+for (const n in SOUNDS) { const a = new Audio("assets/" + SOUNDS[n] + ".wav"); a.preload = "auto"; AUD[n] = a; }
+let musicEl = null, musicName = null, musicBase = 0.5;
+const playingSfx = new Set();
+function sfx(name, vol = 1) {
+  if (!AUD[name] || volume() <= 0) return;
+  const a = AUD[name].cloneNode();
+  a.volume = Math.min(1, vol * volume());
+  playingSfx.add(a); a.onended = () => playingSfx.delete(a);
+  const p = a.play(); if (p && p.catch) p.catch(() => {});
 }
-function startMenu() {
-  stopAllSounds();
-  G.scene = "menu"; G.backdrop = "bakgrund1";
-  G.planets = [
-    // each: forever { wait A; move +steps; wait B; move -steps } (his exact waits)
-    planetScript("sun",   -260, -163, 1000, [() => 2, () => 1],              5 * -1),
-    planetScript("mars",  -166,  140,  700, [() => rand(1, 3), () => rand(1, 2)], 15),
-    planetScript("moon",   131,  139,  600, [() => 1, () => 1],              -10),
-    planetScript("earth",  188, -142, 1000, [() => rand(0, 3), () => rand(1, 3)], 10),
-  ];
-  G.starCostume = 3; G.starTimer = rand(1, 3);
-  music("Space Ambience", 0.7);
+function music(name, base = 0.5) {
+  if (musicName === name && musicEl) return;
+  if (musicEl) musicEl.pause();
+  musicEl = null; musicName = name; musicBase = base;
+  if (!name) return;
+  musicEl = AUD[name].cloneNode();
+  musicEl.loop = true;                   // like his "forever: play sound until done"
+  musicEl.volume = Math.min(1, base * volume());
+  const p = musicEl.play(); if (p && p.catch) p.catch(() => {});
 }
-function tickMenu() {
-  for (const p of G.planets) {
-    p.timer -= STEP;
-    if (p.timer <= 0) {
-      p.phase ^= 1;
-      p.x = p.homeX + (p.phase ? p.steps : 0);
-      p.timer = p.waits[p.phase]();
-    }
-    p.drawX += (p.x - p.drawX) * 0.18;     // glide instead of Scratch's jump
-  }
-  G.starTimer -= STEP;
-  if (G.starTimer <= 0) { G.starCostume = (G.starCostume + 1) % 4; G.starTimer = rand(1, 3); }
-}
-
-// --- choose meat eater or plant eater (broadcast meddelande1)
-function startChoose() {
-  stopAllSounds();
-  sfx("pop");
-  G.scene = "choose"; G.backdrop = "Stars";
-  music("Chill", 0.6);
-}
-const CHOOSERS = [
-  { type: "meat",  sprite: "meat chooser",  x: -123, y: -15, label: "MEAT EATER" },
-  { type: "plant", sprite: "plant chooser", x:  106, y: -15, label: "PLANT EATER" },
-];
-
-// --- playing a level
-function startLevel(n) {
-  stopAllSounds();
-  G.scene = "play"; G.level = n;
-  G.backdrop = n === 1 ? "bakgrund2" : "bakgrund4";
-  G.levelmätare = 0; G.barShown = 0;
-  const f = FORMS[G.utveclad];
-  G.player = { x: 0, y: 0, dir: G.player && n === 2 ? G.player.dir : 90, costume: f.base,
-               anim: null, animKind: null, moveDelay: n === 1 ? 2 : 0 };
-  G.food = []; G.popups = [];
-  G.spawnTimer = rand(1, 5);
-  G.critter = { x: rand(-200, 200), y: rand(-120, 150), fx: 0, fy: 0, tx: 0, ty: 0, t: 0, dur: 3, costume: 0, ct: 0 };
-  G.critter.fx = G.critter.tx = G.critter.x; G.critter.fy = G.critter.ty = G.critter.y;
-  G.hintT = 5;
-  if (n === 1) G.playTime = 0;
-  music(n === 1 ? "Elec Piano Loop" : "Techno", 0.5);
-}
-function startAnim(kind) {
-  const f = FORMS[G.utveclad], p = G.player;
-  p.anim = { steps: f[kind], i: -1, t: 0 }; p.animKind = kind;
-  nextAnimStep();
-}
-function nextAnimStep() {
-  const p = G.player, a = p.anim;
-  a.i++;
-  if (a.i >= a.steps.length) { p.anim = null; p.animKind = null; p.costume = FORMS[G.utveclad].base; return; }
-  const [c, secs, snd] = a.steps[a.i];
-  p.costume = c; a.t = secs;
-  if (snd) sfx(snd);
-}
-function pressE() {
-  // like his "when e key pressed": does nothing if you are already mid-attack
-  if (G.scene !== "play" || !G.player || G.player.animKind === "attack") return;
-  startAnim("attack");
-}
-function spawnFood() {
-  const sprite = G.spelartyp === "meat" ? "meat" : "plant";
-  if (G.food.length >= 40) return;
-  // his clones did "go to random position"; we keep them off the level bar and fully on screen
-  G.food.push({ sprite, costume: rand(0, 2), x: rand(-215, 215), y: rand(-128, 160),
-                size: sprite === "meat" ? 300 : 500, age: 0, dir: 90 });
-}
-function tickPlay() {
-  const p = G.player, f = FORMS[G.utveclad];
-  G.playTime += STEP;
-  if (G.hintT > 0) G.hintT -= STEP;
-
-  // animation player
-  if (p.anim) { p.anim.t -= STEP; if (p.anim.t <= 0) nextAnimStep(); }
-
-  // his movement: if distance to mouse > 40 { point towards mouse; move 5 steps }
-  const dx = mouse.x - p.x, dy = mouse.y - p.y;
-  if (Math.hypot(dx, dy) > 40) {
-    p.dir = 90 - Math.atan2(dy, dx) * 180 / Math.PI;
-    if (p.moveDelay <= 0) {
-      const r = (p.dir) * Math.PI / 180;
-      p.x += 5 * Math.sin(r); p.y += 5 * Math.cos(r);
-      p.x = Math.max(-240, Math.min(240, p.x)); p.y = Math.max(-180, Math.min(180, p.y));
-    }
-  }
-  if (p.moveDelay > 0) p.moveDelay -= STEP;
-
-  // eating: touching food = it disappears and the meter goes up
-  const pc = COST[f.sprite][f.base];
-  const pr = costumeRadius(pc, 700);
-  for (let i = G.food.length - 1; i >= 0; i--) {
-    const fd = G.food[i], c = COST[fd.sprite][fd.costume];
-    const s = fd.size / 100 / 2;
-    const fx = fd.x + (c.img.width / 2 - c.cx) * s, fy = fd.y - (c.img.height / 2 - c.cy) * s;
-    if (Math.hypot(fx - p.x, fy - p.y) < pr + costumeRadius(c, fd.size)) {
-      G.food.splice(i, 1);
-      G.levelmätare += f.gain;
-      G.popups.push({ x: fx, y: fy, text: "+" + f.gain, t: 0.8 });
-      startAnim("eat");
-    }
-  }
-  for (const fd of G.food) fd.age += STEP;
-
-  // food spawner: forever { wait (1 to 5) secs; create clone }
-  G.spawnTimer -= STEP;
-  if (G.spawnTimer <= 0) { spawnFood(); G.spawnTimer = rand(1, 5); }
-
-  for (const pp of G.popups) { pp.t -= STEP; pp.y += 0.8; }
-  G.popups = G.popups.filter(pp => pp.t > 0);
-
-  // the little swimmer (his Sprajt5): glide 3 secs to random position, forever
-  const cr = G.critter;
-  cr.t += STEP;
-  if (cr.t >= cr.dur) { cr.fx = cr.x; cr.fy = cr.y; cr.tx = rand(-220, 220); cr.ty = rand(-130, 165); cr.t = 0; }
-  const k = Math.min(1, cr.t / cr.dur);
-  cr.x = cr.fx + (cr.tx - cr.fx) * k; cr.y = cr.fy + (cr.ty - cr.fy) * k;
-  cr.ct += STEP; if (cr.ct > 0.3) { cr.ct = 0; cr.costume ^= 1; }
-
-  G.barShown += (Math.min(G.levelmätare, GOAL[G.level]) - G.barShown) * 0.2;
-
-  if (G.level === 1 && G.levelmätare > 49) levelUp();
-  else if (G.level === 2 && G.levelmätare > 64) finish();
-}
-
-// --- LEVEL UP! (broadcast "level uuuuuuuuuuuuuup 1")
-function levelUp() {
-  stopAllSounds();
-  G.scene = "levelup"; G.backdrop = "Stars2"; G.levelUpT = 0;
-  G.food = []; G.popups = [];
-  sfx("Triumph");
-}
-function tickLevelUp() { G.levelUpT += STEP; }
-function pickUpgrade(u) {
-  sfx("pop");
-  G.utveclad = u.form;
-  startLevel(2);
-}
-
-// --- the end (new: his level 2 never ended, so evolving fully is the win)
-function finish() {
-  stopAllSounds();
-  sfx("Win");
-  const time = G.playTime;
-  const prevBest = save.best[G.utveclad];
-  const newForm = !save.found.includes(G.utveclad);
-  if (newForm) save.found.push(G.utveclad);
-  if (prevBest === undefined || time < prevBest) save.best[G.utveclad] = time;
+function stopAllSounds() { music(null); for (const a of playingSfx) a.pause(); playingSfx.clear(); }
+function applyVolume() {
+  if (musicEl) musicEl.volume = Math.min(1, musicBase * volume());
+  if (synth.master) synth.master.gain.value = volume() * 0.9;
   writeSave();
-  G.endInfo = { time, best: save.best[G.utveclad], record: prevBest === undefined || time < prevBest, newForm, t: 0 };
-  G.scene = "end"; G.backdrop = "Stars";
-  G.player.costume = FORMS[G.utveclad].base; G.player.anim = null; G.player.animKind = null;
 }
-function tickEnd() {
-  G.endInfo.t += STEP;
-  const p = G.player;
-  if (p.anim) { p.anim.t -= STEP; if (p.anim.t <= 0) nextAnimStep(); }
-  else if (G.endInfo.t % 2.5 < STEP) startAnim("attack");   // show off the attack every few seconds
+
+// ----------------------------------------------------------- new synthesized sounds (WebAudio)
+// An oscillator is a tone generator; a gain node is a volume knob. Each sound
+// is a few of them wired together with a quick volume "envelope" (fade in/out).
+const synth = { ctx: null, master: null, noise: null, amb: null, ambKind: null };
+function initSynth() {
+  if (synth.ctx) { if (synth.ctx.state === "suspended") synth.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  try {
+    synth.ctx = new AC();
+    synth.master = synth.ctx.createGain();
+    synth.master.gain.value = volume() * 0.9;
+    synth.master.connect(synth.ctx.destination);
+    const len = synth.ctx.sampleRate * 2;
+    synth.noise = synth.ctx.createBuffer(1, len, synth.ctx.sampleRate);
+    const d = synth.noise.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    if (synth.wantAmb) ambience(synth.wantAmb);
+  } catch (e) { synth.ctx = null; }
 }
+function tone(type, f0, f1, dur, vol, delay = 0) {
+  const A = synth.ctx; if (!A || volume() <= 0) return;
+  const t = A.currentTime + delay, o = A.createOscillator(), g = A.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(synth.master); o.start(t); o.stop(t + dur + 0.05);
+}
+function noiseHit(dur, vol, type, f0, f1, delay = 0) {
+  const A = synth.ctx; if (!A || volume() <= 0) return;
+  const t = A.currentTime + delay, s = A.createBufferSource(), f = A.createBiquadFilter(), g = A.createGain();
+  s.buffer = synth.noise; f.type = type; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(synth.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+}
+const SYN = {
+  bubble(v = 0.08) { const f = 300 + Math.random() * 300; tone("sine", f, f * 3, 0.08, v); },
+  hover() { tone("triangle", 880, 990, 0.05, 0.05); },
+  click() { tone("square", 520, 520, 0.05, 0.05); tone("square", 780, 780, 0.08, 0.05, 0.05); },
+  hurt() { tone("sawtooth", 260, 70, 0.28, 0.16); noiseHit(0.2, 0.25, "lowpass", 2500, 300); },
+  hit() { noiseHit(0.09, 0.3, "lowpass", 4000, 500); tone("triangle", 180, 50, 0.14, 0.3); },
+  kill() { [700, 560, 420, 300].forEach((f, i) => tone("square", f, f * 0.85, 0.08, 0.05, i * 0.05)); noiseHit(0.25, 0.15, "bandpass", 1500, 300); },
+  sparkle() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone("sine", f, f, 0.35, 0.06, i * 0.07)); },
+  warn() { tone("square", 1300, 900, 0.16, 0.035); tone("square", 1250, 850, 0.16, 0.035, 0.2); },
+  roar() { tone("sawtooth", 95, 32, 1.1, 0.25); tone("square", 60, 30, 1.0, 0.12); noiseHit(1.0, 0.25, "lowpass", 900, 120); },
+  die() { tone("triangle", 500, 60, 0.9, 0.2); noiseHit(0.5, 0.15, "lowpass", 1200, 100); },
+  heal() { tone("sine", 660, 990, 0.12, 0.04); },
+  step() { noiseHit(0.05, 0.05, "bandpass", 900, 600); },
+  swoosh() { noiseHit(0.25, 0.12, "bandpass", 600, 2400); },
+};
+// looping background ambience: filtered noise = water rumble / wind
+function ambience(kind) {
+  synth.wantAmb = kind;
+  const A = synth.ctx; if (!A || synth.ambKind === kind) return;
+  if (synth.amb) { const old = synth.amb; old.g.gain.setTargetAtTime(0, A.currentTime, 0.4); setTimeout(() => { try { old.s.stop(); old.lfo.stop(); } catch (e) {} }, 1500); synth.amb = null; }
+  synth.ambKind = kind;
+  if (!kind) return;
+  const s = A.createBufferSource(), f = A.createBiquadFilter(), g = A.createGain(), lfo = A.createOscillator(), lg = A.createGain();
+  s.buffer = synth.noise; s.loop = true;
+  const cfg = { sea: ["lowpass", 520, 0.06], open: ["lowpass", 380, 0.07], deep: ["lowpass", 200, 0.11], land: ["bandpass", 650, 0.05], space: ["lowpass", 260, 0.03] }[kind];
+  f.type = cfg[0]; f.frequency.value = cfg[1]; f.Q.value = 0.7;
+  lfo.frequency.value = kind === "land" ? 0.13 : 0.2; lg.gain.value = cfg[1] * 0.35;
+  lfo.connect(lg); lg.connect(f.frequency);
+  g.gain.value = 0; g.gain.setTargetAtTime(cfg[2], A.currentTime, 0.8);
+  s.connect(f); f.connect(g); g.connect(synth.master);
+  s.start(); lfo.start();
+  synth.amb = { s, g, lfo };
+}
+
+// ----------------------------------------------------------- small helpers
+const rnd = (a, b) => a + Math.random() * (b - a);
+const irnd = (a, b) => Math.floor(rnd(a, b + 1));
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, k) => a + (b - a) * k;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+const easeOutBack = k => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+function seeded(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function makeCanvas(w, h) { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
 const fmtTime = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 
-// --- clicking
-function hit(c, x, y, size, px, py) {
-  const b = costumeBox(c, x, y, size);
-  return px >= b.left - 6 && px <= b.right + 6 && py <= b.top + 6 && py >= b.bottom - 6;
+// =====================================================================
+// PART 2 - ART. Everything is drawn with canvas paths: fill + gradient
+// shading + dark outline. Creatures face RIGHT (+x) in their own space.
+// =====================================================================
+const COL = {
+  body: ["#a8ffbf", "#22d455", "#08852c"], line: "#06361a",
+  brown: "#8e5a1a", brownHi: "#c99245", brownLine: "#3a2208",
+  eye: "#0a0a12", bone: "#f4f6ff", boneLine: "#7d8699",
+};
+
+function strokeFill(g, fill, line, lw) {
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (line) { g.lineWidth = lw || 2.5; g.strokeStyle = line; g.stroke(); }
 }
-function hoverTarget(px, py) {
-  if (G.scene === "menu" && hit(COST.play[0], 9, -67, 200, px, py)) return "play";
-  if (G.scene === "choose") for (const ch of CHOOSERS) if (hit(COST[ch.sprite][0], ch.x, ch.y, 700, px, py)) return ch;
-  if (G.scene === "levelup" && G.levelUpT >= 5)
-    for (const u of UPGRADES[G.spelartyp]) if (hit(COST[u.sprite][0], u.x, 0, 700, px, py)) return u;
-  return null;
+function circle(g, x, y, r) { g.beginPath(); g.arc(x, y, Math.max(0.01, r), 0, Math.PI * 2); }
+function radial(g, x, y, r, stops, lx = -0.35, ly = -0.4) {
+  const gr = g.createRadialGradient(x + lx * r, y + ly * r, r * 0.08, x, y, r * 1.05);
+  stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c));
+  return gr;
 }
-function click(px, py) {
-  if (G.scene === "flag") { startMenu(); return; }
-  if (G.scene === "end") { if (G.endInfo.t > 1.5) startMenu(); return; }
-  const h = hoverTarget(px, py);
-  if (!h) return;
-  if (h === "play") startChoose();
-  else if (G.scene === "choose") {
-    G.spelartyp = h.type;
-    G.utveclad = h.type === "meat" ? "normal meat" : "normal plant";
-    G.player = null;
-    startLevel(1);
-  } else if (G.scene === "levelup") pickUpgrade(h);
+function polyline(g, pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); }
+function roundRect(g, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function shadow(g, x, y, rx, ry, a = 0.22) {
+  g.save(); g.fillStyle = `rgba(0,10,30,${a})`; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); g.restore();
 }
 
-function tick() {
-  G.t += STEP;
-  G.hover = hoverTarget(mouse.x, mouse.y);
-  canvas.style.cursor = G.hover || G.scene === "flag" || (G.scene === "end" && G.endInfo.t > 1.5) ? "pointer" : "default";
-  if (G.scene === "menu") tickMenu();
-  else if (G.scene === "play") tickPlay();
-  else if (G.scene === "levelup") tickLevelUp();
-  else if (G.scene === "end") tickEnd();
+// ---------------------------------------------------------------- THE CREATURE (his design)
+// look = { type: "meat"|"plant", stats: {atk, eat, def}, evolved, legs, t, open, angry, swing, swingTrail,
+//          punch, spikeOut, curl, flash, walk, moving, blink }
+// His features, now driven by your stats:
+//   tail ............ every evolved form (all his "upg 2" costumes have one)
+//   ATTACK 1+ ....... his two brown knobs with white whiskers; 2+ bone spikes; 3 war paint + red eyes
+//   EAT 1+ .......... meat: his big box jaws, plant: his three vines; 2+ glowing feelers; 3 bigger body
+//   DEFENCE 1+ ...... his white spikes all around; 2+ armour plates; 3 longer spikes
+function drawCreature(g, x, y, ang, k, L) {
+  const R = 24, st = L.stats, plant = L.type === "plant";
+  const S = k * (st.eat >= 3 ? 1.12 : 1);
+  g.save();
+  g.translate(x, y); g.rotate(ang); g.scale(S, S);
+  g.lineJoin = "round"; g.lineCap = "round";
+  if (L.legs) drawLegs(g, R, L);
+  if (L.evolved) drawTail(g, R, L);
+  if (plant) drawVines(g, R, L);
+  if (st.def >= 1) drawSpikes(g, R, L);
+  drawBody(g, R, ang, L);
+  if (st.def >= 2) drawPlates(g, R);
+  if (st.atk >= 1) drawKnobs(g, R, L);
+  if (st.atk >= 3) drawWarPaint(g, R);
+  drawEyes(g, R, L);
+  if (!plant) { if (st.eat >= 1) drawJaws(g, R, L); else drawClaws(g, R, L); }
+  if (st.eat >= 2) drawFeelers(g, R, L);
+  if (L.flash > 0) { circle(g, 0, 0, R + 1); g.fillStyle = `rgba(255,255,255,${L.flash * 0.75})`; g.fill(); }
+  g.restore();
+}
+function drawBody(g, R, ang, L) {
+  // light comes from the top-left of the WORLD, so turn it against the creature's rotation
+  const lx = Math.cos(-ang) * -0.35 - Math.sin(-ang) * -0.42, ly = Math.sin(-ang) * -0.35 + Math.cos(-ang) * -0.42;
+  const squash = 1 + Math.sin(L.t * 9) * 0.025 * (L.moving || 0);
+  g.save(); g.scale(squash, 1 / squash);
+  circle(g, 0, 0, R);
+  strokeFill(g, radial(g, 0, 0, R, COL.body, lx, ly), COL.line, 3);
+  // membrane speckles
+  g.fillStyle = "rgba(4,100,40,.28)";
+  [[-9, 6, 3], [-3, 12, 2.2], [-13, -4, 2.4], [2, -13, 1.8], [-6, -10, 1.5]].forEach(([a, b, r]) => { circle(g, a, b, r); g.fill(); });
+  // glossy highlight
+  g.beginPath(); g.ellipse(lx * R * 0.55, ly * R * 0.55, R * 0.32, R * 0.18, Math.atan2(ly, lx) + Math.PI / 2, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,.35)"; g.fill();
+  g.restore();
+}
+function drawTail(g, R, L) {
+  const wag = Math.sin(L.t * 9) * 4 * (0.4 + (L.moving || 0));
+  g.beginPath();
+  g.moveTo(-R + 4, -6);
+  g.quadraticCurveTo(-R - 8, -8 + wag * 0.5, -R - 16, -15 + wag);
+  g.quadraticCurveTo(-R - 10, wag * 0.6, -R - 16, 15 + wag);
+  g.quadraticCurveTo(-R - 8, 8 + wag * 0.5, -R + 4, 6);
+  g.closePath();
+  const gr = g.createLinearGradient(-R - 16, 0, -R + 4, 0);
+  gr.addColorStop(0, "#0d9a37"); gr.addColorStop(1, "#3be36a");
+  strokeFill(g, gr, COL.line, 3);
+  g.strokeStyle = "rgba(6,54,26,.45)"; g.lineWidth = 1.4;
+  for (const d of [-7, 0, 7]) { g.beginPath(); g.moveTo(-R - 1, d * 0.4); g.lineTo(-R - 11, d + wag * 0.8); g.stroke(); }
+}
+function drawEyes(g, R, L) {
+  const e = R * 0.3, red = L.stats.atk >= 3 && L.angry > 0.3;
+  for (const s of [-1, 1]) {
+    g.save(); g.translate(R * 0.45, s * R * 0.38); g.scale(1, s);
+    const bl = L.blink ? 0.15 : 1;
+    g.scale(1, bl);
+    g.beginPath();
+    const cut = (L.angry || 0) * e * 0.6;
+    g.moveTo(-e / 2, -e / 2 + cut); g.lineTo(e / 2 - 1.5, -e / 2); g.quadraticCurveTo(e / 2, -e / 2, e / 2, -e / 2 + 1.5);
+    g.lineTo(e / 2, e / 2 - 1.5); g.quadraticCurveTo(e / 2, e / 2, e / 2 - 1.5, e / 2); g.lineTo(-e / 2 + 1.5, e / 2);
+    g.quadraticCurveTo(-e / 2, e / 2, -e / 2, e / 2 - 1.5); g.closePath();
+    g.fillStyle = COL.eye; g.fill();
+    if (red) { circle(g, e * 0.1, e * 0.12, e * 0.22); g.fillStyle = "#ff3b3b"; g.fill(); }
+    circle(g, -e * 0.12, -e * 0.05 + cut * 0.5, e * 0.14); g.fillStyle = "rgba(255,255,255,.9)"; g.fill();
+    g.restore();
+  }
+}
+function drawClaws(g, R, L) {                // his brown "C" pincers (normal meat eater)
+  const open = L.open;
+  for (const s of [-1, 1]) {
+    g.save(); g.scale(1, s); g.translate(R - 4, -4); g.rotate(-open * 0.6);
+    g.beginPath(); g.arc(7, -2, 7.5, Math.PI, Math.PI * 2 + 0.55);
+    g.lineWidth = 7.5; g.strokeStyle = COL.brownLine; g.stroke();
+    g.lineWidth = 4.5; g.strokeStyle = COL.brown; g.stroke();
+    g.beginPath(); g.arc(7, -2, 7.5, Math.PI * 1.2, Math.PI * 1.7);
+    g.lineWidth = 1.5; g.strokeStyle = COL.brownHi; g.stroke();
+    g.restore();
+  }
+}
+function drawJaws(g, R, L) {                 // his square box jaws (meat eater EAT form)
+  const open = L.open;
+  for (const s of [-1, 1]) {
+    g.save(); g.scale(1, s); g.translate(R - 6, -1); g.rotate(-open * 0.5);
+    g.beginPath();
+    g.moveTo(0, -12); g.lineTo(17, -12); g.quadraticCurveTo(20, -12, 20, -9); g.lineTo(20, 0); g.lineTo(14, 0);
+    g.lineTo(14, -6); g.lineTo(0, -6); g.closePath();
+    const gr = g.createLinearGradient(0, -12, 0, 0); gr.addColorStop(0, COL.brownHi); gr.addColorStop(1, COL.brown);
+    strokeFill(g, gr, COL.brownLine, 2.6);
+    g.fillStyle = COL.bone; g.strokeStyle = COL.boneLine; g.lineWidth = 1;
+    for (const tx of [3, 7.5, 12]) { g.beginPath(); g.moveTo(tx - 2, -6); g.lineTo(tx, -2); g.lineTo(tx + 2, -6); g.closePath(); g.fill(); g.stroke(); }
+    g.beginPath(); g.moveTo(14, -1); g.lineTo(17, 3); g.lineTo(20, -1); g.closePath(); g.fill(); g.stroke();
+    g.restore();
+  }
+}
+function vinePoints(baseAng, R, len, t, wig, phase, curl) {
+  const n = 12, sl = len / n; let a = baseAng, x = Math.cos(a) * (R - 5), y = Math.sin(a) * (R - 5);
+  const pts = [[x, y]];
+  for (let i = 1; i <= n; i++) {
+    a = baseAng + Math.sin(t * 7 + phase - i * 0.8) * wig * (0.35 + i / n) + curl * i / n;
+    x += Math.cos(a) * sl; y += Math.sin(a) * sl; pts.push([x, y]);
+  }
+  return pts;
+}
+function drawVine(g, pts, w) {
+  polyline(g, pts); g.lineWidth = w + 3.5; g.strokeStyle = COL.brownLine; g.stroke();
+  polyline(g, pts); g.lineWidth = w; g.strokeStyle = COL.brown; g.stroke();
+  polyline(g, pts.slice(0, -3)); g.lineWidth = w * 0.3; g.strokeStyle = "rgba(230,180,100,.55)"; g.stroke();
+  const tip = pts[pts.length - 1]; circle(g, tip[0], tip[1], w * 0.55); g.fillStyle = COL.brown; g.fill();
+}
+function drawVines(g, R, L) {                // his brown wiggly vine (plant eater); EAT form has three
+  const sw = L.swing || 0, curl = L.curl || 0;
+  const angles = L.stats.eat >= 1 ? [0, -1.25, 1.25] : [0];
+  if (L.swingTrail > 0) {                    // his swing "motion lines"
+    g.save(); g.globalAlpha = L.swingTrail * 0.6; g.strokeStyle = "#fff"; g.lineWidth = 2.5;
+    for (const r of [R + 20, R + 32, R + 42]) { g.beginPath(); g.arc(0, 0, r, sw - 1.4, sw - 0.1); g.stroke(); }
+    g.restore();
+  }
+  angles.forEach((a0, i) => {
+    const len = (i === 0 ? 40 : 34) * (1 - curl * 0.35);
+    drawVine(g, vinePoints(a0 + sw, R, len, L.t, 0.32 + curl * 0.6, i * 2.1, curl * 1.4 * (i % 2 ? -1 : 1)), i === 0 ? 5 : 4.2);
+  });
+}
+function drawSpikes(g, R, L) {              // his white spikes (DEFENCE form)
+  const n = L.stats.def >= 3 ? 13 : 10, len = (L.stats.def >= 3 ? 9 : 6) + (L.spikeOut || 0) * 11;
+  g.fillStyle = COL.bone; g.strokeStyle = COL.boneLine; g.lineWidth = 1.4;
+  for (let i = 0; i < n; i++) {
+    const a = 0.75 + i * (2 * Math.PI - 1.5) / (n - 1);
+    const c = Math.cos(a), s = Math.sin(a), tx = -s, ty = c;
+    g.beginPath();
+    g.moveTo(c * (R - 2) + tx * 3.4, s * (R - 2) + ty * 3.4);
+    g.lineTo(c * (R + len), s * (R + len));
+    g.lineTo(c * (R - 2) - tx * 3.4, s * (R - 2) - ty * 3.4);
+    g.closePath(); g.fill(); g.stroke();
+  }
+}
+function drawPlates(g, R) {                  // new: armour plates (DEFENCE 2+)
+  for (let k = -1; k <= 1; k++) {
+    const a = Math.PI + k * 0.78, h = 0.32;
+    g.beginPath(); g.arc(0, 0, R + 1.5, a - h, a + h); g.arc(0, 0, R * 0.5, a + h * 0.8, a - h * 0.8, true); g.closePath();
+    const gr = g.createRadialGradient(0, 0, R * 0.5, 0, 0, R + 2); gr.addColorStop(0, "#1a9b44"); gr.addColorStop(1, "#0b6a2a");
+    strokeFill(g, gr, COL.line, 2.2);
+    g.beginPath(); g.arc(0, 0, R - 1.5, a - h * 0.75, a + h * 0.75); g.strokeStyle = "rgba(170,255,190,.55)"; g.lineWidth = 1.6; g.stroke();
+  }
+}
+function drawKnobs(g, R, L) {               // his two brown knobs with white whiskers (ATTACK form)
+  const p = L.punch || 0, big = L.stats.atk >= 2;
+  for (const s of [-1, 1]) {
+    g.save(); g.scale(1, s);
+    const a = -0.95, kx = Math.cos(a) * (R + 1) + p * 11, ky = Math.sin(a) * (R + 1) + p * 4, kr = big ? 8 : 7;
+    if (p > 0.25) {                           // his orange streaks
+      g.strokeStyle = `rgba(255,170,40,${p})`; g.lineWidth = 2.2;
+      for (const d of [-4, 0, 4]) { g.beginPath(); g.moveTo(kx - 26, ky + d - 3); g.lineTo(kx - 10, ky + d); g.stroke(); }
+    }
+    if (big) {
+      g.fillStyle = COL.bone; g.strokeStyle = COL.boneLine; g.lineWidth = 1.3;
+      for (const sa of [-0.9, -0.2, 0.5]) {
+        const c = Math.cos(sa), sn = Math.sin(sa);
+        g.beginPath(); g.moveTo(kx + c * kr * 0.7 - sn * 3, ky + sn * kr * 0.7 + c * 3); g.lineTo(kx + c * (kr + 9), ky + sn * (kr + 9));
+        g.lineTo(kx + c * kr * 0.7 + sn * 3, ky + sn * kr * 0.7 - c * 3); g.closePath(); g.fill(); g.stroke();
+      }
+    } else {
+      g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(kx + 5, ky - 2); g.quadraticCurveTo(kx + 16, ky - 6, kx + 22, ky + 1); g.stroke();
+      g.beginPath(); g.moveTo(kx + 5, ky + 2); g.quadraticCurveTo(kx + 13, ky + 4, kx + 18, ky + 10); g.stroke();
+    }
+    circle(g, kx, ky, kr);
+    strokeFill(g, radial(g, kx, ky, kr, ["#d8a04f", COL.brown, "#5a360c"]), COL.brownLine, 2.4);
+    g.restore();
+  }
+}
+function drawWarPaint(g, R) {
+  g.strokeStyle = "#e8343f"; g.lineWidth = 2.6;
+  for (const s of [-1, 1]) for (const d of [0, 4]) { g.beginPath(); g.moveTo(R * 0.05 - d, s * (R * 0.62 + d * 0.3)); g.lineTo(R * 0.32 - d, s * (R * 0.8 + d * 0.2)); g.stroke(); }
+}
+function drawFeelers(g, R, L) {              // new: glowing feelers (EAT 2+), sniff out food
+  for (const s of [-1, 1]) {
+    const tx = R + 18, ty = s * (R * 0.95 + 4 + Math.sin(L.t * 3 + s) * 3);
+    g.beginPath(); g.moveTo(R * 0.55, s * R * 0.72); g.quadraticCurveTo(R + 4, s * (R + 8), tx, ty);
+    g.lineWidth = 4; g.strokeStyle = COL.line; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#d9c24a"; g.stroke();
+    g.save(); g.shadowColor = "#fff27a"; g.shadowBlur = 10; circle(g, tx, ty, 3.6); g.fillStyle = "#fff59a"; g.fill(); g.restore();
+  }
+}
+function drawLegs(g, R, L) {                 // new: legs for the shore
+  const walk = L.walk || 0, mv = Math.min(1, L.moving || 0);
+  [[0.95, 0], [-0.95, Math.PI], [2.25, Math.PI], [-2.25, 0]].forEach(([a, ph]) => {
+    const sw = Math.sin(walk + ph) * 0.42 * mv;
+    const ba = a + sw * 0.4, c = Math.cos(ba), s = Math.sin(ba);
+    const bx = c * (R - 4), by = s * (R - 4);
+    const out = a > 0 ? 1 : -1;
+    const kx = bx + c * 10 + sw * 7, ky = by + s * 10;
+    const fx = kx + c * 6 + sw * 5, fy = ky + s * 7 + out * 2;
+    g.beginPath(); g.moveTo(bx, by); g.lineTo(kx, ky); g.lineTo(fx, fy);
+    g.lineWidth = 9; g.strokeStyle = COL.line; g.stroke();
+    g.lineWidth = 5.5; g.strokeStyle = "#13a53e"; g.stroke();
+    g.beginPath(); g.ellipse(fx, fy, 5, 3.6, ba, 0, Math.PI * 2); strokeFill(g, "#0d7f30", COL.line, 2);
+  });
 }
 
-// ---------------------------------------------------------------- 4. DRAW
-function bob(target, amount = 0.06) {      // little hover pulse for clickable things
-  return G.hover === target ? 1 + amount + Math.sin(G.t * 8) * 0.02 : 1;
+// ---------------------------------------------------------------- FOOD (his meat + seagrass / tong / mussle)
+const MEAT_COLS = [["#ffc0d4", "#f58fb0", "#c05b80"], ["#c98b55", "#9a5a25", "#5c3412"], ["#ff6ee6", "#e01fc4", "#8a0d79"]];
+const meatShapes = [0, 1, 2].map(v => { const r = seeded(v * 31 + 5); return Array.from({ length: 11 }, () => 0.82 + r() * 0.22); });
+function drawFood(g, f, t) {
+  const pop = f.age < 0.35 ? easeOutBack(f.age / 0.35) : 1;
+  g.save(); g.translate(f.x, f.y); g.scale(pop, pop);
+  if (f.glow) { g.save(); g.globalCompositeOperation = "lighter"; circle(g, 0, 0, 26); g.fillStyle = radial(g, 0, 0, 26, [f.sprite === "meat" ? "rgba(255,90,140,.35)" : "rgba(90,255,120,.35)", "rgba(0,0,0,0)"], 0, 0); g.fill(); g.restore(); }
+  g.rotate(f.rot + Math.sin(t * 1.5 + f.x) * 0.08);
+  g.lineJoin = "round"; g.lineCap = "round";
+  if (f.sprite === "meat") {
+    const sh = meatShapes[f.v], c = MEAT_COLS[f.v], r = 13;
+    g.beginPath();
+    for (let i = 0; i <= 11; i++) { const a = i / 11 * Math.PI * 2, rr = r * sh[i % 11]; const px = Math.cos(a) * rr, py = Math.sin(a) * rr; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+    g.closePath();
+    strokeFill(g, radial(g, 0, 0, r, c), "rgba(40,0,20,.75)", 2.4);
+    g.strokeStyle = "rgba(255,255,255,.45)"; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(-6, -2); g.quadraticCurveTo(-1, -7, 4, -3); g.quadraticCurveTo(7, 1, 3, 5); g.stroke();
+    g.beginPath(); g.moveTo(-5, 5); g.quadraticCurveTo(-2, 2, 0, 6); g.stroke();
+    g.beginPath(); g.ellipse(-4, -6, 3.5, 2, -0.5, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.45)"; g.fill();
+  } else if (f.v === 0) {                    // seagrass: his green S-squiggle
+    const sway = Math.sin(t * 2 + f.x * 0.1) * 2;
+    const pts = [[-14, 6], [-8, 9], [-3, 4], [-6, -2], [0, -7 + sway * 0.3], [6, -3], [4, 4], [10, 7], [15, 2 + sway]];
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length - 1; i++) g.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+    g.lineWidth = 7.5; g.strokeStyle = "#063a14"; g.stroke(); g.lineWidth = 4.5; g.strokeStyle = "#1fd24a"; g.stroke();
+    g.lineWidth = 1.4; g.strokeStyle = "rgba(200,255,200,.7)"; g.stroke();
+  } else if (f.v === 1) {                    // tong: his brown branchy seaweed
+    const br = [[[-14, 8], [-4, 2], [6, -6], [14, -4]], [[-4, 2], [-6, -8], [-2, -13]], [[2, -2], [8, 4], [8, 11]], [[6, -6], [10, -12]]];
+    for (const w of [7, 4.2]) for (const b of br) { polyline(g, b); g.lineWidth = w; g.strokeStyle = w > 5 ? "#2e1606" : "#9b4a12"; g.stroke(); }
+    g.lineWidth = 1.2; g.strokeStyle = "rgba(255,190,120,.6)"; polyline(g, br[0]); g.stroke();
+  } else {                                   // mussle: grey shell
+    g.beginPath(); g.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
+    strokeFill(g, radial(g, 0, 0, 12, ["#eef1f6", "#9aa3b2", "#4f5868"]), "#262b35", 2.4);
+    g.strokeStyle = "rgba(40,45,60,.5)"; g.lineWidth = 1.2;
+    for (const r of [4, 7.5, 10.5]) { g.beginPath(); g.ellipse(-12 + r * 0.9, 0, r * 0.9, r * 0.62, 0, -1.2, 1.2); g.stroke(); }
+    g.beginPath(); g.ellipse(3, -3, 4, 1.6, -0.3, 0, Math.PI * 2); g.fillStyle = "rgba(190,220,255,.6)"; g.fill();
+  }
+  g.restore();
 }
-function draw() {
-  ctx.setTransform(viewScale, 0, 0, viewScale, canvas.width / 2, canvas.height / 2);
-  ctx.imageSmoothingEnabled = true;          // the starry photo backdrop looks best smooth
-  ctx.fillStyle = "#000"; ctx.fillRect(-240, -180, 480, 360);
-  const bg = BACK[G.backdrop];
-  if (bg && bg.width) ctx.drawImage(bg, -240, -180, 480, 360);
-  ctx.imageSmoothingEnabled = false;         // ...but his pixel art stays crisp
 
-  if (G.scene === "loading") {
-    pixelText("LOADING " + Math.floor(loaded / toLoad * 100) + "%", 0, 4, 2, "#fff");
-  } else if (G.scene === "flag") drawFlag();
-  else if (G.scene === "menu") drawMenu();
-  else if (G.scene === "choose") drawChoose();
-  else if (G.scene === "play") drawPlay();
-  else if (G.scene === "levelup") drawLevelUp();
-  else if (G.scene === "end") drawEnd();
+// ---------------------------------------------------------------- ENEMIES (new, same style)
+function eyeDot(g, x, y, r, angry, red) {
+  g.save(); g.translate(x, y);
+  roundRect(g, -r, -r, r * 2, r * 2, r * 0.35); g.fillStyle = COL.eye; g.fill();
+  if (angry) { g.beginPath(); g.moveTo(-r - 1, -r - 1); g.lineTo(r + 1, -r - 1); g.lineTo(r + 1, -r * 0.1); g.closePath(); g.fillStyle = "rgba(0,0,0,0)"; }
+  if (red) { circle(g, r * 0.15, r * 0.15, r * 0.45); g.fillStyle = "#ff2a2a"; g.fill(); }
+  circle(g, -r * 0.3, -r * 0.3, r * 0.3); g.fillStyle = "#fff"; g.fill();
+  g.restore();
+}
+function drawEnemy(g, e, t) {
+  const D = ENEMY[e.type];
+  g.save(); g.translate(e.x, e.y); g.rotate(e.ang);
+  g.lineJoin = "round"; g.lineCap = "round";
+  const wind = e.state === "windup" ? 1 : 0, shake = wind ? Math.sin(t * 60) * 1.5 : 0;
+  g.translate(0, shake);
+  const fl = e.flash > 0;
+  const F = (c) => (fl ? "#ffffff" : c);
+  const wag = Math.sin(t * 10 + e.seed) * (e.state === "lunge" ? 7 : 4);
+  if (e.type === "nibbler") {
+    g.beginPath(); g.moveTo(-10, 0); g.lineTo(-24, -10 + wag); g.lineTo(-21, 0); g.lineTo(-24, 10 + wag); g.closePath();
+    strokeFill(g, F("#7b3fd6"), "#22093f", 2.4);
+    g.beginPath(); g.ellipse(0, 0, 16, 11, 0, 0, Math.PI * 2);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 16, ["#d6b0ff", "#9b55ff", "#5520a8"]), "#22093f", 2.6);
+    g.beginPath(); g.moveTo(-2, -10); g.quadraticCurveTo(2, -17, 8, -9); strokeFill(g, F("#8a47ec"), "#22093f", 2);
+    const o = 2 + wind * 4;
+    g.fillStyle = COL.bone; g.strokeStyle = "#22093f"; g.lineWidth = 1;
+    for (const ty of [-4, 0, 4]) { g.beginPath(); g.moveTo(12, ty - 2 - o * 0.3); g.lineTo(17 + o, ty); g.lineTo(12, ty + 2 + o * 0.3); g.closePath(); g.fill(); g.stroke(); }
+    eyeDot(g, 6, -4, 2.6, false, false);
+  } else if (e.type === "spikefish") {
+    const puff = 1 + wind * 0.25 + (e.state === "lunge" ? 0.2 : 0);
+    g.fillStyle = F("#c8ced9"); g.strokeStyle = "#3a3f4b"; g.lineWidth = 1.4;
+    for (let i = 0; i < 14; i++) {
+      const a = i / 14 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), r0 = 17 * puff, r1 = (26 + wind * 5) * puff;
+      g.beginPath(); g.moveTo(c * r0 - s * 3, s * r0 + c * 3); g.lineTo(c * r1, s * r1); g.lineTo(c * r0 + s * 3, s * r0 - c * 3); g.closePath(); g.fill(); g.stroke();
+    }
+    g.beginPath(); g.moveTo(-14, 0); g.lineTo(-29, -9 + wag); g.lineTo(-29, 9 + wag); g.closePath(); strokeFill(g, F("#e8731a"), "#4a1e00", 2.4);
+    circle(g, 0, 0, 19 * puff);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 19 * puff, ["#ffd9a0", "#ff8a1f", "#b44a00"]), "#4a1e00", 2.8);
+    g.fillStyle = "rgba(120,40,0,.35)"; for (const [a, b] of [[-6, 6], [-10, -3], [0, 10], [-2, -9]]) { circle(g, a * puff, b * puff, 2.4); g.fill(); }
+    eyeDot(g, 8, -7, 3.2, false, false); eyeDot(g, 8, 7, 3.2, false, false);
+    g.beginPath(); g.arc(15 * puff, 0, 4 + wind * 2, -1.2, 1.2); g.lineWidth = 2.2; g.strokeStyle = "#4a1e00"; g.stroke();
+  } else if (e.type === "angler") {
+    const jaw = 0.25 + wind * 0.5 + (e.state === "lunge" ? 0.3 : 0);
+    g.beginPath(); g.moveTo(-16, 0); g.lineTo(-34, -12 + wag); g.lineTo(-30, 0); g.lineTo(-34, 12 + wag); g.closePath(); strokeFill(g, F("#1e2c66"), "#04081e", 2.4);
+    g.beginPath(); g.ellipse(0, 0, 25, 19, 0, 0, Math.PI * 2);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 25, ["#5a74c9", "#2a3c8f", "#0e1640"]), "#04081e", 3);
+    g.save(); g.beginPath(); g.moveTo(10, 0); g.lineTo(30, -12 - jaw * 8); g.lineTo(30, 12 + jaw * 8); g.closePath(); g.fillStyle = "#3a0612"; g.fill(); g.restore();
+    g.fillStyle = COL.bone; g.strokeStyle = "#04081e"; g.lineWidth = 1;
+    for (let i = 0; i < 5; i++) { const x0 = 12 + i * 3.6, yy = -3 - jaw * 4 - i * 1.5; g.beginPath(); g.moveTo(x0, yy - 4); g.lineTo(x0 + 1.8, yy + 3); g.lineTo(x0 + 3.6, yy - 4); g.fill(); g.stroke();
+      const y2 = 3 + jaw * 4 + i * 1.5; g.beginPath(); g.moveTo(x0, y2 + 4); g.lineTo(x0 + 1.8, y2 - 3); g.lineTo(x0 + 3.6, y2 + 4); g.fill(); g.stroke(); }
+    const lx = 30 + Math.sin(t * 2 + e.seed) * 4, ly = -30 + Math.cos(t * 1.7 + e.seed) * 3;
+    g.beginPath(); g.moveTo(4, -17); g.quadraticCurveTo(14, -40, lx, ly); g.lineWidth = 2.4; g.strokeStyle = "#0e1640"; g.stroke();
+    circle(g, lx, ly, 4.5); g.fillStyle = "#fffb9a"; g.fill();
+    eyeDot(g, 8, -9, 3, false, true);
+  } else if (e.type === "crab") {
+    const step = Math.sin(t * 16 + e.seed) * (e.moving ? 1 : 0.2);
+    g.strokeStyle = "#3d0505"; g.lineWidth = 6;
+    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const bx = -8 + i * 8, sw = (i % 2 ? step : -step) * 4;
+      g.beginPath(); g.moveTo(bx, s * 10); g.lineTo(bx - 3 + sw, s * 22); g.lineTo(bx - 7 + sw, s * 28);
+      g.lineWidth = 6; g.strokeStyle = "#3d0505"; g.stroke(); g.lineWidth = 3.2; g.strokeStyle = F("#d93a2b"); g.stroke();
+    }
+    const pinch = wind ? 0.6 : e.state === "lunge" ? 0 : 0.25;
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.moveTo(10, s * 9); g.lineTo(20, s * 16); g.lineWidth = 7; g.strokeStyle = "#3d0505"; g.stroke(); g.lineWidth = 4; g.strokeStyle = F("#d93a2b"); g.stroke();
+      g.save(); g.translate(24, s * 17); g.scale(1, s);
+      g.beginPath(); g.ellipse(2, 0, 9, 6, 0, 0, Math.PI * 2); strokeFill(g, F("#f0503e"), "#3d0505", 2.4);
+      g.beginPath(); g.moveTo(6, -1); g.lineTo(15, -4 - pinch * 6); g.lineTo(9, 2); g.closePath(); strokeFill(g, F("#f0503e"), "#3d0505", 2);
+      g.restore();
+    }
+    g.beginPath(); g.ellipse(0, 0, 17, 15, 0, 0, Math.PI * 2);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 17, ["#ff9a7a", "#e8402e", "#8f1a10"]), "#3d0505", 2.8);
+    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(12, s * 5); g.lineTo(19, s * 7); g.lineWidth = 2; g.strokeStyle = "#3d0505"; g.stroke(); eyeDot(g, 20, s * 7.5, 2.4, false, false); }
+  } else if (e.type === "prey") {
+    g.beginPath(); g.moveTo(-6, 0); g.lineTo(-16, -7 + wag * 0.7); g.lineTo(-16, 7 + wag * 0.7); g.closePath(); strokeFill(g, F("#f2b705"), "#5a3d00", 2);
+    g.beginPath(); g.ellipse(0, 0, 11, 7, 0, 0, Math.PI * 2);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 11, ["#fff6b0", "#ffd21f", "#c99300"]), "#5a3d00", 2.2);
+    g.strokeStyle = "rgba(160,100,0,.5)"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-2, -6); g.lineTo(-2, 6); g.stroke();
+    eyeDot(g, 5, -2.5, 1.9, false, false);
+  } else if (e.type === "boss") {
+    const jaw = 0.15 + wind * 0.55 + (e.state === "lunge" ? 0.4 : 0);
+    g.scale(1.25, 1.25);
+    g.beginPath(); g.moveTo(-36, 0); g.lineTo(-66, -26 + wag * 1.5); g.quadraticCurveTo(-56, 0, -66, 26 + wag * 1.5); g.closePath();
+    strokeFill(g, F("#7a1028"), "#1a0208", 3);
+    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(-4, s * 22); g.quadraticCurveTo(-18, s * 48, -30, s * 44); g.quadraticCurveTo(-22, s * 30, -20, s * 18); g.closePath(); strokeFill(g, F("#8e1631"), "#1a0208", 3); }
+    g.beginPath(); g.ellipse(0, 0, 48, 28, 0, 0, Math.PI * 2);
+    strokeFill(g, fl ? "#fff" : radial(g, 0, 0, 48, ["#ff6f87", "#c0213f", "#4d0616"]), "#1a0208", 3.5);
+    g.strokeStyle = "rgba(40,0,10,.45)"; g.lineWidth = 3;
+    for (const x of [-26, -14, -2]) { g.beginPath(); g.moveTo(x, -24); g.quadraticCurveTo(x + 6, 0, x, 24); g.stroke(); }
+    g.strokeStyle = "rgba(255,220,220,.5)"; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(-8, -12); g.lineTo(4, -4); g.moveTo(-6, -4); g.lineTo(2, -14); g.stroke();
+    g.save(); g.beginPath(); g.moveTo(22, 0); g.lineTo(52, -14 - jaw * 16); g.lineTo(52, 14 + jaw * 16); g.closePath(); g.fillStyle = "#2a0006"; g.fill(); g.restore();
+    g.fillStyle = COL.bone; g.strokeStyle = "#1a0208"; g.lineWidth = 1.2;
+    for (let i = 0; i < 7; i++) { const x0 = 24 + i * 4, y1 = -2 - jaw * 7 - i * 1.7, y2 = 2 + jaw * 7 + i * 1.7;
+      g.beginPath(); g.moveTo(x0, y1 - 5); g.lineTo(x0 + 2, y1 + 3); g.lineTo(x0 + 4, y1 - 5); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(x0, y2 + 5); g.lineTo(x0 + 2, y2 - 3); g.lineTo(x0 + 4, y2 + 5); g.fill(); g.stroke(); }
+    for (const s of [-1, 1]) { g.save(); g.shadowColor = "#ff2020"; g.shadowBlur = 12; eyeDot(g, 22, s * 14, 4.2, true, true); g.restore(); }
+  }
+  g.restore();
+}
+function drawGull(gl, g, t) {               // new: shore bird seen from above + its shadow
+  const k = gl.t / gl.dur;
+  // shadow on the ground = the warning
+  const sr = 18 + k * 30;
+  g.save(); g.fillStyle = `rgba(20,10,0,${0.12 + k * 0.3})`; g.beginPath(); g.ellipse(gl.x, gl.y, sr * 1.3, sr * 0.8, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = `rgba(255,60,40,${0.25 + 0.5 * k * (Math.sin(t * 20) * 0.5 + 0.5)})`; g.lineWidth = 2.5; g.setLineDash([6, 6]);
+  g.beginPath(); g.ellipse(gl.x, gl.y, 48, 30, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); g.restore();
+  // the bird itself swoops in from far away (drawn high above = bigger, offset)
+  const bx = lerp(gl.sx, gl.x, k), by = lerp(gl.sy, gl.y, k) - (1 - k) * 60;
+  const flap = Math.sin(t * 14) * 0.5, sc = 1.3 - k * 0.3;
+  g.save(); g.translate(bx, by); g.rotate(Math.atan2(gl.y - gl.sy, gl.x - gl.sx)); g.scale(sc, sc);
+  g.lineJoin = "round";
+  for (const s of [-1, 1]) {
+    g.beginPath(); g.moveTo(-2, s * 4); g.quadraticCurveTo(-8, s * (28 + flap * 10), -22, s * (40 + flap * 14)); g.quadraticCurveTo(-12, s * 16, -12, s * 4); g.closePath();
+    strokeFill(g, "#f7f9fc", "#3c4452", 2.4);
+    g.beginPath(); g.moveTo(-16, s * (30 + flap * 10)); g.lineTo(-22, s * (40 + flap * 14)); g.lineWidth = 3; g.strokeStyle = "#2b2f38"; g.stroke();
+  }
+  g.beginPath(); g.ellipse(0, 0, 16, 7, 0, 0, Math.PI * 2); strokeFill(g, "#ffffff", "#3c4452", 2.4);
+  g.beginPath(); g.moveTo(14, -2.5); g.lineTo(24, 0); g.lineTo(14, 2.5); g.closePath(); strokeFill(g, "#ffb020", "#6b3a00", 1.6);
+  g.beginPath(); g.moveTo(-14, 0); g.lineTo(-22, -5); g.lineTo(-22, 5); g.closePath(); strokeFill(g, "#e9edf3", "#3c4452", 2);
+  g.restore();
+}
+function drawMicrobe(g, m, t) {              // his little cyan swimmer (Sprajt5)
+  g.save(); g.translate(m.x, m.y); g.rotate(m.ang); g.lineCap = "round";
+  const pts = []; for (let i = 0; i <= 8; i++) pts.push([-8 - i * 2.6, Math.sin(t * 12 + m.seed - i * 0.9) * (1 + i * 0.4)]);
+  polyline(g, pts); g.lineWidth = 2.6; g.strokeStyle = "rgba(230,240,255,.9)"; g.stroke();
+  g.beginPath(); g.ellipse(0, 0, 10, 5.5, 0, 0, Math.PI * 2);
+  strokeFill(g, radial(g, 0, 0, 10, ["#c8fbff", "#2fd3ff", "#0a7fb0"]), "#053a52", 1.8);
+  circle(g, 5, -0.5, 2.6); g.fillStyle = "#fff"; g.fill(); circle(g, 5.6, -0.3, 1.3); g.fillStyle = "#000"; g.fill();
+  g.restore();
+}
 
-  if (muted && G.scene !== "loading") pixelText("MUTED", 234, 176, 1, "#fff", 1);
+// ---------------------------------------------------------------- PLANETS (his menu: earth, mars, moon, sun)
+const earthLand = (() => { const r = seeded(11); return Array.from({ length: 9 }, () => ({ x: r(), y: r() * 1.6 - 0.8, w: 0.15 + r() * 0.25, h: 0.12 + r() * 0.22, c: r() < 0.25 ? "w" : "g" })); })();
+const craters = (seed, n) => { const r = seeded(seed); return Array.from({ length: n }, () => ({ x: r() * 1.4 - 0.7, y: r() * 1.4 - 0.7, r: 0.08 + r() * 0.2 })); };
+const marsCraters = craters(3, 6), moonCraters = craters(7, 8);
+function planetShade(g, x, y, r) {          // night side shadow + rim light
+  const gr = g.createRadialGradient(x - r * 0.45, y - r * 0.45, r * 0.2, x, y, r * 1.1);
+  gr.addColorStop(0, "rgba(255,255,255,.18)"); gr.addColorStop(0.55, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,20,.65)");
+  circle(g, x, y, r); g.fillStyle = gr; g.fill();
 }
-function drawFlag() {
-  drawCostume(COST.sign[0], 11, 45, 400);
-  // a green flag, Scratch style
-  ctx.fillStyle = "#c58a2a"; ctx.fillRect(-22, 10, 4, 44);
-  ctx.fillStyle = "#4cbf56";
-  const w = Math.sin(G.t * 4) * 2;
-  ctx.beginPath(); ctx.moveTo(-18, 10); ctx.quadraticCurveTo(0, 4 + w, 20, 12); ctx.lineTo(20, 34);
-  ctx.quadraticCurveTo(0, 26 + w, -18, 32); ctx.closePath(); ctx.fill();
-  pixelText("CLICK TO START", 0, -62, 2, "#fff");
-  pixelText("M = MUTE", 0, -150, 1, "rgba(255,255,255,.6)");
+function drawCratered(g, x, y, r, cols, cr, t) {
+  g.save();
+  circle(g, x, y, r); g.fillStyle = radial(g, x, y, r, cols); g.fill();
+  g.clip();
+  for (const c of cr) {
+    const cx = x + c.x * r, cy = y + c.y * r, rr = c.r * r;
+    circle(g, cx, cy, rr); g.fillStyle = "rgba(0,0,0,.22)"; g.fill();
+    g.beginPath(); g.arc(cx, cy, rr, 0.2, Math.PI + 0.2); g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = r * 0.03; g.stroke();
+  }
+  planetShade(g, x, y, r);
+  g.restore();
 }
-function drawMenu() {
-  drawCostume(COST.stars[G.starCostume], 89, 78, 600);
-  for (const p of G.planets) drawCostume(COST[p.name][0], p.drawX, p.y, p.size);
-  drawCostume(COST.sign[0], 11, 15 + Math.sin(G.t * 1.5) * 2, 400);
-  drawCostume(COST.play[0], 9, -67, 200 * bob("play"));
-  if (save.found.length)
-    pixelText("FORMS FOUND " + save.found.length + "/" + FINAL_FORMS.length, 0, -110, 1, "rgba(255,255,255,.75)");
+function drawEarth(g, x, y, r, t) {
+  g.save();
+  circle(g, x, y, r * 1.18); g.fillStyle = radial(g, x, y, r * 1.18, ["rgba(90,170,255,.0)", "rgba(90,170,255,.0)", "rgba(90,170,255,.35)", "rgba(90,170,255,0)"], 0, 0); g.fill();
+  circle(g, x, y, r); g.fillStyle = radial(g, x, y, r, ["#4f8dff", "#1d4fe0", "#0a2678"]); g.fill();
+  g.clip();
+  const spin = (t * 0.03) % 1;
+  for (const L of earthLand) for (const o of [0, -1]) {
+    const lx = x + ((L.x + spin + o) * 2.2 - 0.6) * r, ly = y + L.y * r;
+    g.beginPath(); g.ellipse(lx, ly, L.w * r, L.h * r, L.x * 3, 0, Math.PI * 2);
+    g.fillStyle = L.c === "w" ? "rgba(255,255,255,.95)" : "#25c04a"; g.fill();
+    if (L.c === "g") { g.beginPath(); g.ellipse(lx + L.w * r * 0.2, ly - L.h * r * 0.2, L.w * r * 0.5, L.h * r * 0.4, 0, 0, Math.PI * 2); g.fillStyle = "#4fdc6c"; g.fill(); }
+  }
+  g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = r * 0.07;
+  for (let i = 0; i < 3; i++) { const cy = y - r * 0.5 + i * r * 0.45, off = ((t * 0.05 + i * 0.3) % 1) * r * 2.4 - r * 1.2;
+    g.beginPath(); g.moveTo(x + off - r * 0.5, cy); g.quadraticCurveTo(x + off, cy - r * 0.15, x + off + r * 0.6, cy + r * 0.05); g.stroke(); }
+  planetShade(g, x, y, r);
+  g.restore();
 }
-function drawChoose() {
-  pixelText("CHOOSE YOUR ANIMOL", 0, 120, 3, "#fff", 0.5, BLUE);
-  for (const ch of CHOOSERS) {
-    const sc = bob(ch, 0.12);
-    drawCostume(COST[ch.sprite][0], ch.x, ch.y + Math.sin(G.t * 2 + ch.x) * 3, 700 * sc);
-    pixelText(ch.label, ch.x, -70, 2, G.hover === ch ? "#fff" : "#9fb4ff", 0.5, BLUE);
+function drawSun(g, x, y, r, t) {
+  g.save();
+  circle(g, x, y, r * 2.2); g.fillStyle = radial(g, x, y, r * 2.2, ["rgba(255,210,60,.45)", "rgba(255,150,20,.12)", "rgba(255,120,0,0)"], 0, 0); g.fill();
+  g.beginPath();
+  for (let i = 0; i <= 48; i++) {
+    const a = i / 48 * Math.PI * 2, rr = r * (1.08 + 0.07 * Math.sin(a * 7 + t * 3) + 0.05 * Math.sin(a * 13 - t * 5));
+    i ? g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : g.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
   }
+  g.closePath(); g.fillStyle = "#ffe23a"; g.fill();
+  circle(g, x, y, r); g.fillStyle = radial(g, x, y, r, ["#fff3a0", "#ffb31a", "#ff8a00"], -0.2, -0.2); g.fill();
+  g.globalAlpha = 0.25;
+  for (let i = 0; i < 5; i++) { const a = t * 0.2 + i * 1.3; circle(g, x + Math.cos(a) * r * 0.45, y + Math.sin(a * 1.3) * r * 0.4, r * 0.18); g.fillStyle = "#ff7a00"; g.fill(); }
+  g.restore();
 }
-function drawPlay() {
-  const p = G.player, f = FORMS[G.utveclad];
-  // swimmer
-  const cr = G.critter;
-  drawCostume(COST.Sprajt5[cr.costume], cr.x, cr.y, 500, 90, 0.85);
-  // food (pops in when it spawns)
-  for (const fd of G.food) {
-    const k = Math.min(1, fd.age / 0.25);
-    const pop = k < 1 ? k * (1.25 - 0.25 * k) : 1;
-    drawCostume(COST[fd.sprite][fd.costume], fd.x, fd.y + Math.sin(G.t * 2 + fd.x) * 1.5, fd.size * pop);
+const drawMars = (g, x, y, r, t) => drawCratered(g, x, y, r, ["#ffab6b", "#e0661f", "#8c3208"], marsCraters, t);
+const drawMoon = (g, x, y, r, t) => drawCratered(g, x, y, r, ["#f2f2f2", "#a9adb5", "#5b5f68"], moonCraters, t);
+
+// ---------------------------------------------------------------- SPACE BACKGROUND (menu + ending)
+const spaceStars = (() => { const r = seeded(99); return Array.from({ length: 260 }, () => ({ x: r(), y: r(), s: 0.4 + r() * 1.6, p: r() * 6, d: 0.2 + r() * 0.8 })); })();
+let shooting = null;
+function drawSpace(g, t, px = 0, py = 0) {
+  const w = VW, h = VH;
+  const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#05031a"); bg.addColorStop(1, "#0b1236");
+  g.fillStyle = bg; g.fillRect(0, 0, w, h);
+  g.save(); g.globalCompositeOperation = "lighter";
+  for (const [nx, ny, nr, c] of [[0.25, 0.3, 0.45, "rgba(120,40,200,.18)"], [0.8, 0.65, 0.5, "rgba(30,90,220,.16)"], [0.55, 0.15, 0.3, "rgba(220,60,160,.10)"]]) {
+    const cx = (nx + Math.sin(t * 0.03 + nx * 9) * 0.02) * w - px * 10, cy = ny * h - py * 10;
+    circle(g, cx, cy, nr * w); g.fillStyle = radial(g, cx, cy, nr * w, [c, "rgba(0,0,0,0)"], 0, 0); g.fill();
   }
-  drawCostume(COST[f.sprite][p.costume], p.x, p.y, 700, p.dir);
-  for (const pp of G.popups) {
-    ctx.globalAlpha = Math.min(1, pp.t / 0.3);
-    pixelText(pp.text, pp.x, pp.y + 10, 2, "#fff", 0.5, BLUE);
-    ctx.globalAlpha = 1;
+  for (const s of spaceStars) {
+    const tw = 0.55 + 0.45 * Math.sin(t * (1 + s.d * 2) + s.p);
+    g.fillStyle = `rgba(255,255,255,${tw * s.d})`;
+    const x = ((s.x * w - px * 30 * s.d) % w + w) % w, y = ((s.y * h - py * 30 * s.d) % h + h) % h;
+    g.fillRect(x, y, s.s, s.s);
+    if (s.s > 1.7 && tw > 0.9) { g.fillRect(x - 3, y + s.s / 2 - 0.4, 6 + s.s, 0.8); g.fillRect(x + s.s / 2 - 0.4, y - 3, 0.8, 6 + s.s); }
   }
-  // his level meter: frame (Sprajt3) and cyan bar (Sprajt1) sliding in from the left
-  const goal = GOAL[G.level];
-  drawCostume(COST.Sprajt3[0], -5, -163, 100);
-  ctx.save();
-  ctx.beginPath(); ctx.rect(-242, 163 - 15, 408, 30); ctx.clip();
-  drawCostume(COST.Sprajt1[0], -400 + G.barShown * (400 / goal), -163, 100);
-  ctx.restore();
-  pixelText("LEVEL " + G.level, -236, -138, 2, "#fff", 0, BLUE);
-  pixelText(Math.min(G.levelmätare, goal) + "/" + goal, 236, -138, 2, "#fff", 1, BLUE);
-  if (G.hintT > 0) {
-    ctx.globalAlpha = Math.min(1, G.hintT);
-    const verb = f.attackName;
-    pixelText(G.level === 1 ? "SWIM WITH THE MOUSE" : f.label, 0, 150, 2, "#fff", 0.5, BLUE);
-    pixelText("EAT " + (G.spelartyp === "meat" ? "MEAT" : "PLANTS") + "  -  E = " + verb, 0, 128, 2, "#fff", 0.5, BLUE);
-    ctx.globalAlpha = 1;
+  if (!shooting && Math.random() < 0.004) shooting = { x: rnd(0.2, 1) * w, y: rnd(0, 0.4) * h, t: 0 };
+  if (shooting) {
+    shooting.t += 1 / 60; const k = shooting.t / 0.8, x = shooting.x - k * 420, y = shooting.y + k * 200;
+    const gr = g.createLinearGradient(x, y, x + 120, y - 57); gr.addColorStop(0, "rgba(255,255,255,.9)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.strokeStyle = gr; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 120, y - 57); g.stroke();
+    if (k >= 1) shooting = null;
   }
-  if (isTouch) {
-    ctx.fillStyle = "rgba(255,255,255,.25)";
-    ctx.beginPath(); ctx.arc(200, -120, 24, 0, Math.PI * 2); ctx.fill();
-    pixelText("E", 200, -109, 3, "#fff");
-  }
+  g.restore();
 }
-function drawLevelUp() {
-  const t = G.levelUpT;
-  if (t < 5) {
-    const k = Math.min(1, t / 0.35);
-    const sc = k < 1 ? 0.3 + k * 0.85 : 1.15 - Math.min(0.15, (t - 0.35) * 0.6);
-    drawCostume(COST.Sprajt4[0], 0, Math.sin(t * 3) * 4, 100 * sc);
+
+// ---------------------------------------------------------------- WORLDS (sea floor, deep, shore)
+// The floor of each zone is painted once into an off-screen canvas (fast), then
+// moving things (light, kelp, bubbles, waves) are drawn on top every frame.
+const FLOOR_RES = 0.5;
+function buildFloor(z) {
+  const Z = ZONES[z], r = seeded(z * 977 + 3);
+  const c = makeCanvas(Z.w * FLOOR_RES, Z.h * FLOOR_RES), g = c.getContext("2d");
+  g.scale(FLOOR_RES, FLOOR_RES);
+  const pal = {
+    sea:  { a: "#1aa5e8", b: "#0b78c2", sand: "rgba(255,240,190,.10)", rock: ["#4f7fa6", "#2c5878", "#163650"], weed: "#1f9e57" },
+    open: { a: "#1271c4", b: "#0a4c94", sand: "rgba(220,240,255,.06)", rock: ["#3b6390", "#22426a", "#10233d"], weed: "#18805a" },
+    deep: { a: "#0b1e4a", b: "#050b22", sand: "rgba(120,160,255,.04)", rock: ["#26355e", "#151f3d", "#080d1f"], weed: "#204a6a" },
+    land: { a: "#f0d595", b: "#d9b366", sand: "rgba(120,80,20,.08)", rock: ["#b9b2a6", "#86806f", "#4f4a3e"], weed: "#4cae3a" },
+  }[Z.kind];
+  const bg = g.createLinearGradient(0, 0, Z.w * 0.3, Z.h); bg.addColorStop(0, pal.a); bg.addColorStop(1, pal.b);
+  g.fillStyle = bg; g.fillRect(0, 0, Z.w, Z.h);
+  // soft blotches
+  for (let i = 0; i < 60; i++) { const x = r() * Z.w, y = r() * Z.h, rr = 60 + r() * 200;
+    circle(g, x, y, rr); g.fillStyle = radial(g, x, y, rr, [r() < 0.5 ? "rgba(255,255,255,.06)" : "rgba(0,0,30,.08)", "rgba(0,0,0,0)"], 0, 0); g.fill(); }
+  // sand ripples
+  g.strokeStyle = pal.sand; g.lineWidth = 3;
+  for (let i = 0; i < 140; i++) { const x = r() * Z.w, y = r() * Z.h, L = 30 + r() * 80;
+    g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + L * 0.3, y - 6, x + L * 0.7, y + 6, x + L, y); g.stroke(); }
+  // pebbles
+  for (let i = 0; i < 160; i++) { const x = r() * Z.w, y = r() * Z.h, rr = 2 + r() * 5;
+    g.beginPath(); g.ellipse(x, y, rr * 1.3, rr, r() * 3, 0, Math.PI * 2); g.fillStyle = pal.rock[irnd(0, 1)]; g.globalAlpha = 0.6; g.fill(); g.globalAlpha = 1; }
+  // rocks (top-down blobs with shading)
+  const rocks = [];
+  const addRock = (x, y, rr) => {
+    rocks.push({ x, y, r: rr });
+    g.save(); g.translate(x, y);
+    shadow(g, 8, 10, rr * 1.05, rr * 0.85, Z.kind === "land" ? 0.25 : 0.3);
+    g.beginPath();
+    for (let i = 0; i <= 9; i++) { const a = i / 9 * Math.PI * 2, q = rr * (0.8 + r() * 0.25); i ? g.lineTo(Math.cos(a) * q, Math.sin(a) * q) : g.moveTo(Math.cos(a) * q, Math.sin(a) * q); }
+    g.closePath(); strokeFill(g, radial(g, 0, 0, rr, pal.rock), "rgba(0,0,0,.35)", 3);
+    g.beginPath(); g.ellipse(-rr * 0.3, -rr * 0.35, rr * 0.3, rr * 0.15, -0.5, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.18)"; g.fill();
+    g.restore();
+  };
+  // border wall of rocks, so the world has edges
+  for (let x = 0; x <= Z.w; x += 70) { addRock(x + r() * 30, -20 + r() * 30, 50 + r() * 40); addRock(x + r() * 30, Z.h + 20 - r() * 30, 50 + r() * 40); }
+  for (let y = 0; y <= Z.h; y += 70) { addRock(-20 + r() * 30, y + r() * 30, 50 + r() * 40); addRock(Z.w + 20 - r() * 30, y + r() * 30, 50 + r() * 40); }
+  for (let i = 0; i < 14; i++) addRock(150 + r() * (Z.w - 300), 150 + r() * (Z.h - 300), 18 + r() * 34);
+  // weed / coral / grass patches
+  for (let i = 0; i < 70; i++) {
+    const x = r() * Z.w, y = r() * Z.h;
+    g.save(); g.translate(x, y); g.rotate(r() * 6.3);
+    if (Z.kind === "land") {
+      g.strokeStyle = pal.weed; g.lineWidth = 2.5; g.lineCap = "round";
+      for (let k = 0; k < 7; k++) { const a = r() * 6.3, L = 6 + r() * 10; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(Math.cos(a) * L * 0.5 + 3, Math.sin(a) * L * 0.5, Math.cos(a) * L, Math.sin(a) * L); g.stroke(); }
+    } else if (r() < 0.5) {
+      g.fillStyle = ["#ff6f91", "#ffb347", "#c77dff", "#ff8a5c"][irnd(0, 3)]; g.globalAlpha = Z.kind === "deep" ? 0.35 : 0.75;
+      for (let k = 0; k < 6; k++) { circle(g, Math.cos(k) * 8 * r(), Math.sin(k * 2) * 8 * r(), 3 + r() * 4); g.fill(); }
+    } else {
+      g.strokeStyle = pal.weed; g.lineWidth = 3; g.lineCap = "round"; g.globalAlpha = 0.8;
+      for (let k = 0; k < 5; k++) { const a = r() * 6.3, L = 10 + r() * 16; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(Math.cos(a + 0.5) * L * 0.6, Math.sin(a + 0.5) * L * 0.6, Math.cos(a) * L, Math.sin(a) * L); g.stroke(); }
+    }
+    g.restore();
+  }
+  if (Z.kind === "land") {                    // shells + footprint-like dents
+    for (let i = 0; i < 40; i++) { const x = r() * Z.w, y = 380 + r() * (Z.h - 380);
+      g.save(); g.translate(x, y); g.rotate(r() * 6.3); g.beginPath(); g.moveTo(0, 6); g.arc(0, 0, 6, 0.3, Math.PI - 0.3, true); g.closePath();
+      strokeFill(g, ["#ffe0ea", "#fff2d6", "#ffd1a8"][irnd(0, 2)], "rgba(110,70,40,.6)", 1.5); g.restore(); }
+  }
+  return { canvas: c, rocks };
+}
+// tileable caustic light pattern (the wobbly bright net you see on a sunny sea floor)
+let causticTile = null;
+function getCaustics() {
+  if (causticTile) return causticTile;
+  const S = 256, c = makeCanvas(S, S), g = c.getContext("2d"), r = seeded(42);
+  g.strokeStyle = "rgba(255,255,255,1)"; g.lineWidth = 2.2; g.lineCap = "round";
+  for (let i = 0; i < 46; i++) {
+    const x = r() * S, y = r() * S, rr = 14 + r() * 26;
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {
+      g.beginPath();
+      for (let k = 0; k <= 7; k++) { const a = k / 7 * Math.PI * 2, q = rr * (0.7 + 0.3 * Math.sin(k * 3 + i)); const px = x + ox + Math.cos(a) * q, py = y + oy + Math.sin(a) * q; k ? g.lineTo(px, py) : g.moveTo(px, py); }
+      g.stroke();
+    }
+  }
+  causticTile = c;
+  return c;
+}
+
+// =====================================================================
+// PART 3 - GAME: scenes, rules, HUD and the main loop
+// =====================================================================
+const G = {
+  scene: "menu", t: 0, paused: false, audioStarted: false,
+  fade: 0, fadeDir: 0, fadeCb: null,
+  buttons: [], hoverId: null,
+  toasts: [], hitstop: 0, slowmo: 0,
+};
+let RUN = null;     // the current run (one game from choose screen to ending)
+let W = null;       // the current zone's world
+let P = null;       // the player creature
+
+// ---------------------------------------------------------------- scene changes with a fade to black
+function go(cb) { if (G.fadeDir) return; G.fadeDir = 1; G.fadeCb = cb; }
+function tickFade(dt) {
+  if (!G.fadeDir) return;
+  G.fade += G.fadeDir * dt / 0.35;
+  if (G.fade >= 1 && G.fadeDir === 1) { G.fade = 1; const cb = G.fadeCb; G.fadeCb = null; G.fadeDir = -1; if (cb) cb(); }
+  if (G.fade <= 0 && G.fadeDir === -1) { G.fade = 0; G.fadeDir = 0; }
+}
+function toast(text, sub, time = 3.2) { G.toasts.push({ text, sub, t: time, max: time }); }
+
+// ---------------------------------------------------------------- menu + choose
+const menuPets = {
+  meat: { type: "meat", anim: null, t: 0, next: 2 },
+  plant: { type: "plant", anim: null, t: 0, next: 3.2 },
+};
+function toMenu() {
+  G.scene = "menu"; G.paused = false; RUN = null; W = null; P = null;
+  if (G.audioStarted) { music("Space Ambience", 0.6); ambience("space"); }
+}
+function toChoose() { G.scene = "choose"; music("Chill", 0.55); ambience("space"); }
+function startAudioOnce() {
+  if (G.audioStarted) return;
+  G.audioStarted = true;
+  if (G.scene === "menu") { music("Space Ambience", 0.6); ambience("space"); }
+}
+
+// ---------------------------------------------------------------- a new run
+function newRun(type) {
+  RUN = { type, first: null, stats: { atk: 0, eat: 0, def: 0 }, zone: 0, meter: 0, time: 0, deaths: 0, legs: false };
+  startZone(0);
+}
+function mealGain() { return 1 + Math.ceil(RUN.stats.eat / 2); }   // his EAT form: 2 per meal; EAT 3: 3 per meal
+function maxHp() { return 8 + 3 * RUN.stats.def; }
+function playerRadius() { return 24 * (RUN.stats.eat >= 3 ? 1.12 : 1); }
+function startZone(z) {
+  stopAllSounds();
+  RUN.zone = z; RUN.meter = 0;
+  const Z = ZONES[z];
+  W = { z, Z, floor: buildFloor(z), food: [], enemies: [], gulls: [], parts: [], microbes: [], popups: [],
+        foodT: 0, enemyT: Z.enemies.map(e => rnd(e.every[0], e.every[1]) * 0.6), gullT: Z.gulls ? rnd(4, 7) : 0, preyT: 0,
+        boss: null, bossPhase: false, bossDead: 0, deco: [], ambBubT: 0, snow: [] };
+  const r = seeded(z * 51 + 9);
+  for (let i = 0; i < 28; i++) W.deco.push({ x: r() * Z.w, y: r() * Z.h, len: 120 + r() * 160, ph: r() * 6, w: 10 + r() * 10 });
+  for (let i = 0; i < 90; i++) W.snow.push({ x: Math.random(), y: Math.random(), d: 0.3 + Math.random() * 0.9, s: 1 + Math.random() * 2.2 });
+  P = { x: Z.w / 2, y: Z.h / 2 + (Z.kind === "land" ? 120 : 0), vx: 0, vy: 0, ang: 0, hp: maxHp(), inv: 1.5, anim: null,
+        walk: 0, moving: 0, blink: 0, blinkT: 2, dead: 0, flash: 0, moveDelay: z === 0 ? 1.2 : 0, trailT: 0 };
+  for (let i = 0; i < Z.startFood; i++) spawnFood(true);
+  if (Z.kind !== "land") for (let i = 0; i < 7; i++) W.microbes.push({ x: rnd(100, Z.w - 100), y: rnd(100, Z.h - 100), ang: rnd(0, 6.3), seed: rnd(0, 9), turn: 0 });
+  cam.x = P.x; cam.y = P.y;
+  G.scene = "play"; G.paused = false;
+  music(Z.music, 0.45);
+  ambience(Z.kind);
+  toast(`Zone ${z + 1}: ${Z.name}`, Z.sub, 3.5);
+  const tips = [
+    "Steer with the mouse (or WASD). Eat " + (RUN.type === "meat" ? "meat - and bite the yellow fish!" : "plants!"),
+    "Hunters! Press E, Space or click to " + attackVerb() + " them.",
+    "It is dark down here. Watch for little lights...",
+    "Watch the ground - a red ring means a gull is diving!",
+  ];
+  setTimeout(() => { if (G.scene === "play" && RUN && RUN.zone === z) toast(tips[z], null, 4.5); }, 2600);
+}
+function attackVerb() { return RUN.type === "meat" ? "bite" : RUN.first === "defence" ? "spike" : "swing your vine at"; }
+
+// ---------------------------------------------------------------- spawning
+function freeSpot(minDist) {
+  const Z = W.Z;
+  for (let i = 0; i < 25; i++) {
+    const p = { x: rnd(110, Z.w - 110), y: rnd(Z.kind === "land" ? 160 : 110, Z.h - 110) };
+    if (!P || dist(p, P) > minDist) return p;
+  }
+  return { x: rnd(110, Z.w - 110), y: rnd(110, Z.h - 110) };
+}
+function spawnFood(initial) {
+  if (W.food.length >= W.Z.foodCap) return;
+  const p = freeSpot(initial ? 140 : 60);
+  const sprite = RUN.type === "meat" ? "meat" : "plant";
+  W.food.push({ sprite, v: irnd(0, 2), x: p.x, y: p.y, rot: rnd(0, 6.3), age: initial ? 1 : 0, glow: W.Z.kind === "deep" });
+}
+function spawnEnemy(type, at) {
+  const D = ENEMY[type], p = at || freeSpot(type === "prey" ? 250 : 620);
+  const e = { type, x: p.x, y: p.y, vx: 0, vy: 0, ang: rnd(0, 6.3), hp: D.hp, state: "roam", timer: 0, flash: 0,
+              goal: freeSpot(0), seed: rnd(0, 9), moving: 0, hitDone: false };
+  W.enemies.push(e);
+  return e;
+}
+
+// ---------------------------------------------------------------- the creature's animations (procedural, timed like his costumes)
+function animDef(kind) {
+  const plant = RUN.type === "plant", f = RUN.first;
+  if (kind === "eat") return { dur: plant ? 0.3 : 0.22, snd: plant ? "Rip" : "Bite", sndAt: 0.1 };
+  if (!plant) return f === "attack" ? { dur: 0.42, snd: "Low Whoosh", sndAt: 0.2, hitAt: 0.2 }
+                                    : { dur: 0.4, snd: "Snap", sndAt: 0.2, hitAt: 0.2 };
+  if (f === "defence") return { dur: 0.42, snd: "Low Whoosh2", sndAt: 0.25, hitAt: 0.25 };
+  if (f === "eat") return { dur: 0.6, snd: "Plant Whoosh", sndAt: 0.3, hitAt: 0.32 };
+  return { dur: 0.85, snd: "Plant Whoosh", sndAt: 0.55, hitAt: 0.55 };   // his swing: slow wind-up, fast whip
+}
+function startAnim(kind) {
+  if (P.anim && P.anim.kind === "attack") return false;
+  P.anim = Object.assign({ kind, t: 0, soundDone: false, hitDone: false }, animDef(kind));
+  return true;
+}
+function tickAnim(dt) {
+  const a = P.anim; if (!a) return;
+  a.t += dt;
+  if (!a.soundDone && a.t >= a.sndAt) { a.soundDone = true; sfx(a.snd, 0.9); }
+  if (a.kind === "attack" && !a.hitDone && a.t >= a.hitAt) { a.hitDone = true; doAttackHit(); }
+  if (a.t >= a.dur) P.anim = null;
+}
+// turn the animation clock into drawing values
+function creatureLook(type, stats, opts) {
+  return Object.assign({ type, stats, evolved: !!(RUN && RUN.first) || opts.evolved, legs: false, t: G.t, open: 0.35 + Math.sin(G.t * 3) * 0.08,
+    angry: 0, swing: 0, swingTrail: 0, punch: 0, spikeOut: 0, curl: 0, flash: 0, walk: 0, moving: 0, blink: false }, opts);
+}
+function playerLook() {
+  const L = creatureLook(RUN.type, RUN.stats, { legs: RUN.legs, walk: P.walk, moving: P.moving, flash: P.flash, blink: P.blink > 0 });
+  const a = P.anim;
+  if (a) {
+    const k = a.t / a.dur;
+    if (a.kind === "eat") {
+      L.open = k < 0.4 ? lerp(0.35, 1.1, k / 0.4) : lerp(1.1, 0, (k - 0.4) / 0.6);
+      L.curl = Math.sin(Math.PI * k);
+    } else {
+      L.angry = 1;
+      const h = a.hitAt / a.dur;
+      if (RUN.type === "meat") {
+        L.open = k < h ? lerp(0.4, 1.3, k / h) : lerp(-0.1, 0.35, (k - h) / (1 - h));
+        L.punch = Math.max(0, 1 - Math.abs(k - h) * 5);
+      } else if (RUN.first === "defence") {
+        L.spikeOut = Math.max(0, 1 - Math.abs(k - h) * 3.5);
+      } else {
+        L.swing = k < h - 0.08 ? -1.7 * Math.sin(Math.PI / 2 * k / (h - 0.08)) : k < h + 0.15 ? lerp(-1.7, 1.6, (k - h + 0.08) / 0.23) : lerp(1.6, 0, (k - h - 0.15) / (1 - h - 0.15));
+        L.swingTrail = k > h - 0.1 && k < h + 0.3 ? 1 - Math.abs(k - h - 0.05) * 4 : 0;
+      }
+      if (RUN.stats.atk >= 1) L.punch = Math.max(L.punch, Math.max(0, 1 - Math.abs(k - h) * 5));
+    }
+  }
+  return L;
+}
+
+// ---------------------------------------------------------------- fighting
+function attackPressed() {
+  if (G.scene !== "play" || G.paused || !P || P.dead) return;
+  startAnim("attack");
+}
+function attackArea() {
+  const R = playerRadius(), atk = RUN.stats.atk;
+  if (RUN.type === "meat") {
+    const reach = R + 14 + (atk >= 1 ? 6 : 0);
+    return { x: P.x + Math.cos(P.ang) * reach, y: P.y + Math.sin(P.ang) * reach, r: 28 + 5 * atk };
+  }
+  if (RUN.first === "defence") return { x: P.x, y: P.y, r: R + 30 + 4 * atk };
+  return { x: P.x, y: P.y, r: R + 44 + 4 * atk };
+}
+function doAttackHit() {
+  const A = attackArea(), dmg = 1 + RUN.stats.atk;
+  let hits = 0;
+  for (const e of W.enemies.slice()) {
+    if (Math.hypot(e.x - A.x, e.y - A.y) < A.r + ENEMY[e.type].r * (e.type === "boss" ? 1.1 : 1)) { damageEnemy(e, dmg, true); hits++; }
+  }
+  // the swing / bite leaves a visible slash
+  W.parts.push({ type: "ring", x: A.x, y: A.y, r: A.r * 0.6, r1: A.r, life: 0.22, max: 0.22, col: hits ? "255,240,180" : "255,255,255" });
+  if (hits) { G.hitstop = 0.05; cam.shake = Math.max(cam.shake, 0.25); }
+}
+function damageEnemy(e, n, fromPlayer) {
+  const D = ENEMY[e.type];
+  e.hp -= n; e.flash = 0.13;
+  SYN.hit();
+  const a = Math.atan2(e.y - P.y, e.x - P.x);
+  const kb = D.boss ? 120 : 380;
+  e.vx = Math.cos(a) * kb; e.vy = Math.sin(a) * kb;
+  if (!D.boss || e.state !== "lunge") { e.state = "stun"; e.timer = D.boss ? 0.18 : 0.4; }
+  for (let i = 0; i < 8; i++) { const s = rnd(80, 260), b = a + rnd(-1, 1);
+    W.parts.push({ type: "spark", x: e.x - Math.cos(a) * D.r * 0.6, y: e.y - Math.sin(a) * D.r * 0.6, vx: Math.cos(b) * s, vy: Math.sin(b) * s, life: 0.3, max: 0.3, col: "255,250,210" }); }
+  W.popups.push({ x: e.x, y: e.y - D.r - 6, text: "-" + n, col: "#ffe27a", t: 0.7 });
+  if (e.hp <= 0) killEnemy(e);
+}
+const ENEMY_COL = { nibbler: "155,85,255", spikefish: "255,138,31", angler: "90,116,201", crab: "232,64,46", prey: "255,210,31", boss: "192,33,63" };
+function killEnemy(e) {
+  const D = ENEMY[e.type];
+  W.enemies.splice(W.enemies.indexOf(e), 1);
+  SYN.kill();
+  const n = D.boss ? 90 : 18;
+  for (let i = 0; i < n; i++) { const a = rnd(0, 6.3), s = rnd(40, D.boss ? 420 : 220);
+    W.parts.push({ type: "dot", x: e.x, y: e.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.4, 0.9), max: 0.9, col: ENEMY_COL[e.type], size: rnd(2, D.boss ? 7 : 4.5) }); }
+  W.parts.push({ type: "ring", x: e.x, y: e.y, r: 4, r1: D.r * 2.6, life: 0.4, max: 0.4, col: "255,255,255" });
+  if (D.boss) { bossDefeated(); return; }
+  if (D.prey) { sfx("Bite", 0.9); heal(1.5); }
+  if (W.bossPhase) return;
+  addMeter(D.reward, e.x, e.y);
+}
+function heal(n) {
+  const before = P.hp;
+  P.hp = Math.min(maxHp(), P.hp + n);
+  if (P.hp > before + 0.01 && P.hp - before >= 1) SYN.heal();
+}
+function hurtPlayer(dmg, src) {
+  if (P.inv > 0 || P.dead) return;
+  const d = Math.max(1, dmg - RUN.stats.def);
+  P.hp -= d; P.inv = 1.0; P.flash = 1;
+  cam.shake = 0.6; G.hitstop = 0.06;
+  SYN.hurt();
+  if (src) { const a = Math.atan2(P.y - src.y, P.x - src.x); P.vx += Math.cos(a) * 420; P.vy += Math.sin(a) * 420; }
+  W.popups.push({ x: P.x, y: P.y - 34, text: "-" + d, col: "#ff5a5a", t: 0.9 });
+  if (src && RUN.stats.def > 0 && W.enemies.includes(src)) damageEnemy(src, RUN.stats.def, false);   // thorns!
+  if (P.hp <= 0) playerDie();
+}
+function playerDie() {
+  P.dead = 2.6; P.hp = 0; RUN.deaths++;
+  SYN.die(); cam.shake = 1;
+  for (let i = 0; i < 40; i++) { const a = rnd(0, 6.3), s = rnd(40, 260);
+    W.parts.push({ type: "dot", x: P.x, y: P.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.5, 1.1), max: 1.1, col: "34,212,85", size: rnd(2, 5) }); }
+}
+function respawn() {
+  P.dead = 0; P.hp = maxHp(); P.inv = 2.2; P.vx = P.vy = 0;
+  if (!W.bossPhase) { const lost = Math.floor(RUN.meter / 2); RUN.meter -= lost; toast("You got eaten!", lost ? `Lost ${lost} evolution points` : "Try again", 2.6); }
+  else { W.boss.hp = Math.min(ENEMY.boss.hp, W.boss.hp + 8); toast("You got eaten!", "The Apex healed a little. Keep going!", 2.6); }
+  W.enemies = W.enemies.filter(e => e.type === "boss" || e.type === "prey" || dist(e, P) > 650);
+  if (W.boss) { const p = freeSpot(600); W.boss.x = p.x; W.boss.y = p.y; W.boss.state = "roam"; }
+}
+function addMeter(n, x, y) {
+  if (W.bossPhase) return;
+  RUN.meter += n;
+  W.popups.push({ x, y: y - 20, text: "+" + n, col: "#7dfcff", t: 0.9 });
+}
+
+// ---------------------------------------------------------------- the boss: THE APEX (new ending)
+function startBoss() {
+  W.bossPhase = true;
+  RUN.meter = ZONES[3].goal;
+  W.enemies = W.enemies.filter(e => e.type !== "crab" || dist(e, P) < 300);
+  const b = spawnEnemy("boss", { x: clamp(P.x, 300, W.Z.w - 300), y: 120 });
+  b.state = "chase"; W.boss = b;
+  stopAllSounds(); music("Movie 1", 0.5);
+  SYN.roar(); cam.shake = 1.2;
+  toast("THE APEX HAS COME!", "Beat it to become the top of the food chain", 4);
+}
+function bossDefeated() {
+  W.bossDead = 3; G.slowmo = 1.2; cam.shake = 1.5;
+  SYN.roar(); sfx("Win", 1);
+  W.boss = null;
+  toast("YOU ARE THE APEX!", null, 3);
+}
+
+// ---------------------------------------------------------------- evolving (after zones 1-3)
+const EVO_TXT = {
+  attack: { name: "ATTACK", col: "#ff5a4f", main: "+1 damage on every hit",
+    feat: ["", "Grow brown knobs", "Knobs get bone spikes", "War paint + red eyes"] },
+  eat: { name: "EAT", col: "#ffd23f", main: "More per meal, heal more, pull food in",
+    feat: ["", "BIG", "Glowing feelers", "Bigger body"] },
+  defence: { name: "DEFENCE", col: "#5fb8ff", main: "+3 max HP, -1 damage, spikes hurt biters",
+    feat: ["", "White spikes all around", "Armour plates", "Longer spikes"] },
+};
+function featText(kind, lvl) {
+  if (kind === "eat" && lvl === 1) return RUN.type === "meat" ? "Big box jaws" : "Three vines";
+  return EVO_TXT[kind].feat[Math.min(3, lvl)];
+}
+function toEvolve() {
+  G.scene = "evolve"; G.evoT = 0; G.evoPicked = null;
+  stopAllSounds(); sfx("Triumph", 1); SYN.sparkle();
+  W.food = []; W.enemies = []; W.gulls = [];
+}
+function pickEvolution(kind) {
+  if (G.evoPicked) return;
+  G.evoPicked = kind; SYN.click(); SYN.sparkle();
+  if (!RUN.first) RUN.first = kind;
+  RUN.stats[{ attack: "atk", eat: "eat", defence: "def" }[kind]]++;
+  const next = RUN.zone + 1;
+  if (next === 3) RUN.legs = true;
+  go(() => startZone(next));
+}
+
+// ---------------------------------------------------------------- ending
+function finishGame() {
+  const s = RUN.stats, m = Math.max(s.atk, s.eat, s.def), tops = ["atk", "eat", "def"].filter(k => s[k] === m);
+  const title = tops.length > 1 ? "THE SURVIVOR" : { atk: "THE HUNTER", eat: "THE GLUTTON", def: "THE FORTRESS" }[tops[0]];
+  const key = RUN.type + ":" + title;
+  const prev = save.best[key];
+  const isNew = !save.found.includes(key);
+  if (isNew) save.found.push(key);
+  if (prev === undefined || RUN.time < prev) save.best[key] = RUN.time;
+  save.wins = (save.wins || 0) + 1;
+  writeSave();
+  RUN.end = { title, key, best: save.best[key], record: prev !== undefined && RUN.time < prev, isNew, t: 0 };
+  G.scene = "ending";
+  stopAllSounds(); music("Dance Energetic", 0.5); ambience("space");
+}
+
+// ---------------------------------------------------------------- input routing
+function onClick(ux, uy, pointerType) {
+  startAudioOnce();
+  for (let i = G.buttons.length - 1; i >= 0; i--) {
+    const b = G.buttons[i];
+    if (ux >= b.x && ux <= b.x + b.w && uy >= b.y && uy <= b.y + b.h) { if (b.click) { SYN.click(); b.click(); } return; }
+  }
+  if (G.scene === "play" && !G.paused && pointerType !== "touch") attackPressed();
+}
+function onKey(code) {
+  startAudioOnce();
+  if (code === "KeyE" || code === "Space" || code === "KeyJ") attackPressed();
+  if (code === "KeyM") { save.muted = !save.muted; applyVolume(); }
+  if (code === "Minus" || code === "NumpadSubtract") { save.vol = clamp(Math.round((save.vol - 0.2) * 5) / 5, 0, 1); save.muted = false; applyVolume(); }
+  if (code === "Equal" || code === "NumpadAdd") { save.vol = clamp(Math.round((save.vol + 0.2) * 5) / 5, 0, 1); save.muted = false; applyVolume(); }
+  if ((code === "KeyP" || code === "Escape") && G.scene === "play") G.paused = !G.paused;
+  if (code === "Enter" && G.scene === "menu") go(toChoose);
+}
+function autoPause() { if (G.scene === "play") G.paused = true; }
+function touchOnButton(e) {
+  if (G.scene !== "play") return false;
+  const r = canvas.getBoundingClientRect();
+  const ux = (e.clientX - r.left) * DPR / UI, uy = (e.clientY - r.top) * DPR / UI;
+  return Math.hypot(ux - 90, uy - (VH - 150)) < 60;
+}
+function onAttackButton() { attackPressed(); }
+
+// ---------------------------------------------------------------- PLAY tick
+function tickPlay(dt) {
+  const Z = W.Z;
+  RUN.time += dt;
+  P.inv = Math.max(0, P.inv - dt); P.flash = Math.max(0, P.flash - dt * 4);
+  P.blinkT -= dt; if (P.blinkT <= 0) { P.blink = 0.12; P.blinkT = rnd(2, 5); } P.blink = Math.max(0, P.blink - dt);
+
+  if (P.dead > 0) {
+    P.dead -= dt;
+    if (P.dead <= 0) respawn();
   } else {
-    pixelText("EVOLVE!", 0, 120, 4, "#fff", 0.5, BLUE);
-    const appear = Math.min(1, (t - 5) / 0.3);
-    const names = { attack: "ATTACK", eat: "EAT", defence: "DEFENCE" };
-    for (const u of UPGRADES[G.spelartyp]) {
-      drawCostume(COST[u.sprite][0], u.x, Math.sin(G.t * 2 + u.x) * 3, 700 * appear * bob(u, 0.12));
-      pixelText(names[u.kind], u.x, -62, 2, G.hover === u ? "#fff" : "#9fb4ff", 0.5, BLUE);
-      if (u.kind === "eat") pixelText("2 X FOOD", u.x, -82, 1, "#ffe066", 0.5, null);
+    // --- steering: his rule "if distance to mouse > 40: point towards mouse and move"
+    const m = screenToWorld(mouse.sx, mouse.sy);
+    let dx = m.x - P.x, dy = m.y - P.y, d = Math.hypot(dx, dy), want = 0;
+    const kx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+    const ky = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+    if (kx || ky) { dx = kx; dy = ky; d = 999; }
+    if (d > 40 && (mouse.moved || kx || ky)) want = clamp((d - 40) / 90, 0, 1);
+    if (P.moveDelay > 0) { P.moveDelay -= dt; want = 0; }
+    const speed = (Z.kind === "land" ? 215 : 235) * (P.anim && P.anim.kind === "attack" ? 0.75 : 1);
+    const tvx = d > 0 ? dx / d * speed * want : 0, tvy = d > 0 ? dy / d * speed * want : 0;
+    const k = 1 - Math.exp(-dt * 7);
+    P.vx += (tvx - P.vx) * k; P.vy += (tvy - P.vy) * k;
+    P.x += P.vx * dt; P.y += P.vy * dt;
+    P.x = clamp(P.x, 70, Z.w - 70); P.y = clamp(P.y, 70, Z.h - 70);
+    const sp = Math.hypot(P.vx, P.vy);
+    P.moving = clamp(sp / 200, 0, 1);
+    if (d > 40) P.ang += angDiff(P.ang, Math.atan2(dy, dx)) * (1 - Math.exp(-dt * 10));
+    P.walk += dt * sp * 0.07;
+    if (Z.kind === "land" && sp > 60 && Math.floor(P.walk / Math.PI) !== Math.floor((P.walk - dt * sp * 0.07) / Math.PI)) SYN.step();
+    // bubble trail / dust
+    P.trailT -= dt;
+    if (sp > 120 && P.trailT <= 0) {
+      P.trailT = 0.12;
+      const bx = P.x - Math.cos(P.ang) * 30, by = P.y - Math.sin(P.ang) * 30;
+      if (Z.kind === "land") W.parts.push({ type: "dust", x: bx, y: by, vx: rnd(-20, 20), vy: rnd(-20, 20), life: 0.6, max: 0.6, size: rnd(4, 8) });
+      else W.parts.push({ type: "bubble", x: bx + rnd(-5, 5), y: by + rnd(-5, 5), vx: rnd(-10, 10), vy: -rnd(20, 50), life: rnd(0.8, 1.4), max: 1.4, size: rnd(2, 4.5) });
+    }
+    tickAnim(dt);
+  }
+
+  // --- food: magnet (EAT), eating
+  const R = playerRadius(), mag = RUN.stats.eat > 0 ? 30 + 30 * RUN.stats.eat : 0;
+  for (let i = W.food.length - 1; i >= 0; i--) {
+    const f = W.food[i]; f.age += dt;
+    if (P.dead) continue;
+    const d = Math.hypot(f.x - P.x, f.y - P.y);
+    if (mag && d < R + mag) { f.x += (P.x - f.x) / d * 170 * dt; f.y += (P.y - f.y) / d * 170 * dt; }
+    if (d < R + 19) {          // reach a bit past his 40px stop distance so food never sits just out of reach
+      W.food.splice(i, 1);
+      const gain = mealGain();
+      addMeter(gain, f.x, f.y);
+      heal(0.5 + 0.5 * RUN.stats.eat);
+      if (!startAnim("eat")) sfx(RUN.type === "plant" ? "Rip" : "Bite", 0.8);
+      const col = f.sprite === "meat" ? ["255,143,176", "201,139,85", "255,110,230"][f.v] : ["31,210,74", "155,74,18", "180,186,200"][f.v];
+      for (let j = 0; j < 12; j++) { const a = rnd(0, 6.3), s = rnd(30, 150);
+        W.parts.push({ type: "dot", x: f.x, y: f.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.3, 0.6), max: 0.6, col, size: rnd(1.5, 3.5) }); }
+      if (Z.kind !== "land") { for (let j = 0; j < 3; j++) W.parts.push({ type: "bubble", x: f.x + rnd(-6, 6), y: f.y, vx: rnd(-15, 15), vy: -rnd(30, 70), life: 1, max: 1, size: rnd(2, 4) }); SYN.bubble(0.05); }
+    }
+  }
+
+  // --- spawners
+  W.foodT -= dt;
+  if (W.foodT <= 0) { spawnFood(false); W.foodT = rnd(Z.food[0], Z.food[1]); }
+  if (RUN.type === "meat" && Z.prey) {
+    const n = W.enemies.filter(e => e.type === "prey").length;
+    if (n < Z.prey) { W.preyT -= dt; if (W.preyT <= 0) { spawnEnemy("prey"); W.preyT = 4; } }
+  }
+  if (!W.bossPhase) Z.enemies.forEach((sp, i) => {
+    if (RUN.meter < sp.after) return;
+    W.enemyT[i] -= dt;
+    if (W.enemyT[i] <= 0) {
+      W.enemyT[i] = rnd(sp.every[0], sp.every[1]);
+      if (W.enemies.filter(e => e.type === sp.type).length < sp.max) spawnEnemy(sp.type);
+    }
+  });
+  if (Z.gulls && !P.dead) {
+    W.gullT -= dt;
+    if (W.gullT <= 0) {
+      W.gullT = rnd(Z.gulls[0], Z.gulls[1]) * (W.bossPhase ? 1.5 : 1);
+      const tx = P.x + P.vx * 0.55, ty = P.y + P.vy * 0.55, side = Math.random() < 0.5 ? -1 : 1;
+      W.gulls.push({ x: tx, y: ty, sx: tx + side * 700, sy: ty - 500, t: 0, dur: 1.5, hit: false });
+      SYN.warn();
+    }
+  }
+
+  // --- enemies
+  for (const e of W.enemies.slice()) tickEnemy(e, dt);
+  for (const gl of W.gulls) {
+    gl.t += dt;
+    if (!gl.hit && gl.t >= gl.dur) {
+      gl.hit = true; SYN.swoosh();
+      for (let j = 0; j < 14; j++) { const a = rnd(0, 6.3); W.parts.push({ type: "dust", x: gl.x, y: gl.y, vx: Math.cos(a) * 120, vy: Math.sin(a) * 80, life: 0.6, max: 0.6, size: rnd(5, 10) }); }
+      if (Math.hypot(P.x - gl.x, (P.y - gl.y) * 1.5) < 52) hurtPlayer(2, null);
+    }
+  }
+  W.gulls = W.gulls.filter(gl => gl.t < gl.dur + 0.5);
+
+  // --- his little swimmers
+  for (const m of W.microbes) {
+    m.turn += rnd(-1, 1) * dt * 3; m.turn *= 0.98; m.ang += m.turn * dt;
+    if (P && Math.hypot(m.x - P.x, m.y - P.y) < 120) m.ang += angDiff(m.ang, Math.atan2(m.y - P.y, m.x - P.x)) * dt * 3;
+    m.x += Math.cos(m.ang) * 45 * dt; m.y += Math.sin(m.ang) * 45 * dt;
+    if (m.x < 90 || m.x > Z.w - 90 || m.y < 90 || m.y > Z.h - 90) m.ang += angDiff(m.ang, Math.atan2(Z.h / 2 - m.y, Z.w / 2 - m.x)) * dt * 4;
+  }
+
+  // --- ambient bubbles
+  if (Z.kind !== "land") {
+    W.ambBubT -= dt;
+    if (W.ambBubT <= 0) {
+      W.ambBubT = Z.kind === "deep" ? 0.35 : 0.18;
+      const vw = BW / ZOOM, vh = BH / ZOOM;
+      W.parts.push({ type: "bubble", x: cam.x + rnd(-vw / 2, vw / 2), y: cam.y + rnd(-vh / 2, vh / 2), vx: rnd(-6, 6), vy: -rnd(15, 40), life: rnd(1.5, 3), max: 3, size: rnd(1.5, 4) });
+      if (Math.random() < 0.06) SYN.bubble(0.02);
+    }
+  }
+
+  tickParticles(dt);
+
+  // --- level meter checks (his "levelmätare > 49" etc.)
+  if (!W.bossPhase && RUN.meter >= Z.goal && !P.dead) {
+    if (W.z < 3) toEvolve(); else startBoss();
+  }
+  if (W.bossDead > 0) { W.bossDead -= dt; if (W.bossDead <= 0) go(finishGame); }
+}
+
+function tickEnemy(e, dt) {
+  const D = ENEMY[e.type], Z = W.Z;
+  e.flash = Math.max(0, e.flash - dt);
+  const toP = Math.atan2(P.y - e.y, P.x - e.x), dP = Math.hypot(P.x - e.x, P.y - e.y);
+  const R = playerRadius();
+  let tvx = 0, tvy = 0, face = null, steer = 4;
+  const enraged = D.boss && e.hp < D.hp / 2;
+  if (D.prey) {
+    if (dP < D.aggro && !P.dead) { const a = toP + Math.PI + Math.sin(G.t * 3 + e.seed) * 0.5; tvx = Math.cos(a) * D.speed; tvy = Math.sin(a) * D.speed; }
+    else { const a = Math.atan2(e.goal.y - e.y, e.goal.x - e.x); tvx = Math.cos(a) * 60; tvy = Math.sin(a) * 60; if (dist(e, e.goal) < 40) e.goal = freeSpot(0); }
+    if (e.state === "stun") { e.timer -= dt; if (e.timer <= 0) e.state = "roam"; tvx = tvy = 0; steer = 2; }
+  } else switch (e.state) {
+    case "roam": {
+      const a = Math.atan2(e.goal.y - e.y, e.goal.x - e.x);
+      tvx = Math.cos(a) * D.speed * 0.45; tvy = Math.sin(a) * D.speed * 0.45;
+      if (dist(e, e.goal) < 50) e.goal = freeSpot(0);
+      if (dP < D.aggro && !P.dead) e.state = "chase";
+      break;
+    }
+    case "chase": {
+      const sp = D.speed * (enraged ? 1.35 : 1);
+      tvx = Math.cos(toP) * sp; tvy = Math.sin(toP) * sp;
+      if (P.dead || dP > D.aggro * 1.6) e.state = "roam";
+      else if (dP < D.r + R + (D.boss ? 120 : 34)) { e.state = "windup"; e.timer = D.windup * (enraged ? 0.7 : 1); }
+      break;
+    }
+    case "windup":
+      face = toP; steer = 8;
+      e.timer -= dt;
+      if (e.timer <= 0) { e.state = "lunge"; e.timer = D.boss ? 0.45 : 0.26; e.hitDone = false; e.vx = Math.cos(e.ang) * D.lunge; e.vy = Math.sin(e.ang) * D.lunge; if (D.boss) SYN.swoosh(); }
+      break;
+    case "lunge":
+      e.timer -= dt;
+      tvx = e.vx; tvy = e.vy; steer = 0;
+      if (!e.hitDone && dP < D.r + R - 4 && !P.dead) { e.hitDone = true; hurtPlayer(D.dmg, e); }
+      if (e.timer <= 0) { e.state = "recover"; e.timer = D.boss ? 0.7 : 0.9; }
+      break;
+    case "recover":
+      e.timer -= dt;
+      tvx = -Math.cos(toP) * D.speed * 0.4; tvy = -Math.sin(toP) * D.speed * 0.4; face = toP;
+      if (e.timer <= 0) e.state = "chase";
+      break;
+    case "stun":
+      e.timer -= dt; steer = 3;
+      if (e.timer <= 0) e.state = "chase";
+      break;
+  }
+  if (steer) { const k = 1 - Math.exp(-dt * steer); e.vx += (tvx - e.vx) * k; e.vy += (tvy - e.vy) * k; }
+  e.x += e.vx * dt; e.y += e.vy * dt;
+  const m = 60 + D.r;
+  e.x = clamp(e.x, m, Z.w - m); e.y = clamp(e.y, m, Z.h - m);
+  const sp = Math.hypot(e.vx, e.vy); e.moving = sp > 20;
+  const want = face !== null ? face : sp > 8 ? Math.atan2(e.vy, e.vx) : e.ang;
+  if (e.state !== "stun") e.ang += angDiff(e.ang, want) * (1 - Math.exp(-dt * 8));
+}
+
+function tickParticles(dt) {
+  for (const p of W.parts) {
+    p.life -= dt;
+    if (p.type === "bubble") { p.x += (p.vx + Math.sin(p.life * 6) * 12) * dt; p.y += p.vy * dt; }
+    else if (p.vx !== undefined) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92; }
+  }
+  W.parts = W.parts.filter(p => p.life > 0);
+  if (W.parts.length > 700) W.parts.splice(0, W.parts.length - 700);
+  for (const p of W.popups) { p.t -= dt; p.y -= 30 * dt; }
+  W.popups = W.popups.filter(p => p.t > 0);
+}
+
+function tickCamera(dt) {
+  if (!W) return;
+  const k = 1 - Math.exp(-dt * 6);
+  cam.x += (P.x - cam.x) * k; cam.y += (P.y - cam.y) * k;
+  const hw = BW / 2 / ZOOM, hh = BH / 2 / ZOOM, Z = W.Z;
+  cam.x = Z.w < hw * 2 ? Z.w / 2 : clamp(cam.x, hw, Z.w - hw);
+  cam.y = Z.h < hh * 2 ? Z.h / 2 : clamp(cam.y, hh, Z.h - hh);
+  cam.shake = Math.max(0, cam.shake - dt * 2.5);
+}
+
+// ---------------------------------------------------------------- main tick
+function tick(dt) {
+  G.t += dt;
+  tickFade(dt);
+  for (const t of G.toasts) t.t -= dt;
+  G.toasts = G.toasts.filter(t => t.t > 0);
+  for (const k in menuPets) tickPet(menuPets[k], dt);
+  if (G.scene === "play") {
+    if (G.paused) return;
+    if (G.hitstop > 0) { G.hitstop -= dt; return; }
+    let d = dt;
+    if (G.slowmo > 0) { G.slowmo -= dt; d = dt * 0.3; }
+    tickPlay(d);
+    tickCamera(dt);
+  } else if (G.scene === "evolve") {
+    G.evoT += dt;
+    tickParticles(dt);
+  } else if (G.scene === "ending") {
+    RUN.end.t += dt;
+  }
+}
+function tickPet(p, dt) {
+  p.t += dt;
+  if (p.anim) { p.anim.t += dt; if (p.anim.t >= p.anim.dur) p.anim = null; }
+  p.next -= dt;
+  if (p.next <= 0) { p.anim = { kind: "attack", t: 0, dur: p.type === "plant" ? 0.85 : 0.4, hitAt: p.type === "plant" ? 0.55 : 0.2 }; p.next = rnd(2.5, 4.5); }
+}
+function petLook(p, stats, extra) {
+  const L = creatureLook(p.type, stats, Object.assign({ evolved: false }, extra));
+  const a = p.anim;
+  if (a) {
+    const k = a.t / a.dur, h = a.hitAt / a.dur;
+    L.angry = 1;
+    if (p.type === "meat") { L.open = k < h ? lerp(0.4, 1.3, k / h) : lerp(-0.1, 0.35, (k - h) / (1 - h)); L.punch = Math.max(0, 1 - Math.abs(k - h) * 5); }
+    else {
+      L.swing = k < h - 0.08 ? -1.7 * Math.sin(Math.PI / 2 * k / (h - 0.08)) : k < h + 0.15 ? lerp(-1.7, 1.6, (k - h + 0.08) / 0.23) : lerp(1.6, 0, (k - h - 0.15) / (1 - h - 0.15));
+      L.swingTrail = k > h - 0.1 && k < h + 0.3 ? 1 - Math.abs(k - h - 0.05) * 4 : 0;
+      L.spikeOut = stats.def >= 1 ? Math.max(0, 1 - Math.abs(k - h) * 3.5) : 0;
+    }
+  }
+  return L;
+}
+
+// =====================================================================
+// DRAWING
+// =====================================================================
+function txt(s, x, y, size, fill, opts = {}) {
+  const g = ctx;
+  g.font = `${opts.weight || 700} ${size}px ${FONT}`;
+  g.textAlign = opts.align || "center"; g.textBaseline = opts.base || "middle";
+  if (opts.stroke) { g.lineJoin = "round"; g.lineWidth = opts.lw || size * 0.16; g.strokeStyle = opts.stroke; g.strokeText(s, x, y); }
+  if (opts.glow) { g.save(); g.shadowColor = opts.glow; g.shadowBlur = opts.blur || 18; g.fillStyle = fill; g.fillText(s, x, y); g.restore(); }
+  else { g.fillStyle = fill; g.fillText(s, x, y); }
+}
+function button(id, x, y, w, h, label, click, opts = {}) {
+  const hov = mouse.ux >= x && mouse.ux <= x + w && mouse.uy >= y && mouse.uy <= y + h;
+  if (hov && G.hoverId !== id) { G.hoverId = id; SYN.hover(); }
+  if (hov) G._hovered = id;
+  G.buttons.push({ x, y, w, h, click });
+  const g = ctx, lift = hov ? -3 : 0, col = opts.col || ["#3df08a", "#0fae57", "#07612f"];
+  g.save();
+  roundRect(g, x, y + 6, w, h, h * 0.42); g.fillStyle = "rgba(0,0,0,.35)"; g.fill();
+  roundRect(g, x, y + lift, w, h, h * 0.42);
+  const gr = g.createLinearGradient(0, y + lift, 0, y + lift + h); gr.addColorStop(0, col[0]); gr.addColorStop(1, col[1]);
+  g.fillStyle = gr; g.fill();
+  g.lineWidth = 3.5; g.strokeStyle = col[2]; g.stroke();
+  roundRect(g, x + 6, y + lift + 4, w - 12, h * 0.38, h * 0.3); g.fillStyle = "rgba(255,255,255,.22)"; g.fill();
+  if (hov) { g.shadowColor = col[0]; g.shadowBlur = 25; roundRect(g, x, y + lift, w, h, h * 0.42); g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 2; g.stroke(); g.shadowBlur = 0; }
+  txt(label, x + w / 2, y + lift + h / 2 + 1, opts.size || h * 0.45, "#fff", { stroke: col[2], lw: 5 });
+  g.restore();
+  return hov;
+}
+function panel(x, y, w, h, opts = {}) {
+  const g = ctx;
+  g.save();
+  roundRect(g, x, y, w, h, opts.r || 22);
+  g.fillStyle = opts.fill || "rgba(8,18,48,.72)"; g.fill();
+  g.lineWidth = opts.lw || 2.5; g.strokeStyle = opts.line || "rgba(140,200,255,.35)"; g.stroke();
+  g.restore();
+}
+
+// ---------------------------------------------------------------- world rendering
+function drawWorld() {
+  const g = ctx, Z = W.Z, t = G.t;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = "#000"; g.fillRect(0, 0, BW, BH);
+  setWorldTransform();
+  g.imageSmoothingEnabled = true;
+  g.drawImage(W.floor.canvas, 0, 0, Z.w, Z.h);
+  const vw = BW / ZOOM, vh = BH / ZOOM, vx = cam.x - vw / 2 - 40, vy = cam.y - vh / 2 - 40;
+
+  if (Z.kind === "sea" || Z.kind === "open") {   // moving caustic light on the floor
+    const pat = g.createPattern(getCaustics(), "repeat");
+    if (pat) {
+      g.save(); g.globalCompositeOperation = "lighter";
+      for (const [sp, al, sc] of [[14, Z.kind === "sea" ? 0.1 : 0.06, 1.6], [-9, Z.kind === "sea" ? 0.07 : 0.045, 2.3]]) {
+        g.save(); g.globalAlpha = al; g.scale(sc, sc); g.translate(t * sp, t * sp * 0.6);
+        g.fillStyle = pat; g.fillRect(vx / sc - t * sp, vy / sc - t * sp * 0.6, (vw + 80) / sc, (vh + 80) / sc); g.restore();
+      }
+      g.restore();
+    }
+  }
+  if (Z.kind === "land") drawShoreWater();
+  // depth haze between the floor and the swimmers
+  const haze = { sea: "rgba(30,150,230,.22)", open: "rgba(10,70,160,.3)", deep: "rgba(2,8,30,.35)", land: null }[Z.kind];
+  if (haze) { g.fillStyle = haze; g.fillRect(vx, vy, vw + 80, vh + 80); }
+  if (Z.kind === "deep") drawDeepJellies();
+
+  // shadows, then food, enemies, player
+  const sh = Z.kind === "land" ? [6, 10, 0.28] : [10, 16, 0.16];
+  for (const f of W.food) shadow(g, f.x + sh[0] * 0.5, f.y + sh[1] * 0.5, 12, 8, sh[2] * 0.8);
+  for (const e of W.enemies) { const r = ENEMY[e.type].r * (e.type === "boss" ? 1.4 : 1); shadow(g, e.x + sh[0], e.y + sh[1], r * 1.1, r * 0.75, sh[2]); }
+  if (!P.dead) shadow(g, P.x + sh[0], P.y + sh[1], playerRadius() * 1.1, playerRadius() * 0.8, sh[2]);
+  for (const m of W.microbes) drawMicrobe(g, m, t);
+  for (const f of W.food) drawFood(g, f, t);
+  for (const p of W.parts) if (p.type === "dust") { g.fillStyle = `rgba(200,170,110,${p.life / p.max * 0.5})`; circle(g, p.x, p.y, p.size * (1.5 - p.life / p.max)); g.fill(); }
+  for (const e of W.enemies) drawEnemy(g, e, t);
+  if (!P.dead && !(P.inv > 0 && Math.floor(P.inv * 12) % 2 === 1 && P.inv < 1.9)) {
+    const tilt = Math.sin(t * 9) * 0.06 * P.moving;
+    drawCreature(g, P.x, P.y, P.ang + tilt, 1, playerLook());
+  }
+  for (const gl of W.gulls) drawGull(gl, g, t);
+  drawParticles(g);
+  for (const p of W.popups) txt(p.text, p.x, p.y, 20, p.col, { stroke: "rgba(0,0,0,.6)", lw: 4, alpha: 1 });
+
+  // foreground: parallax kelp / leaf shadows, god rays, darkness
+  drawForeground();
+  if (Z.kind === "deep") drawDarkness();
+  drawSnow();
+}
+function drawShoreWater() {
+  const g = ctx, Z = W.Z, t = G.t;
+  const shore = x => 230 + Math.sin(x * 0.004) * 40 + Math.sin(x * 0.011 + 1) * 14;
+  const wave = Math.sin(t * 0.9) * 10;
+  g.beginPath(); g.moveTo(-50, -50);
+  for (let x = -50; x <= Z.w + 50; x += 25) g.lineTo(x, shore(x) + wave + 30);
+  g.lineTo(Z.w + 50, -50); g.closePath(); g.fillStyle = "rgba(120,90,40,.18)"; g.fill();   // wet sand
+  g.beginPath(); g.moveTo(-50, -50);
+  for (let x = -50; x <= Z.w + 50; x += 25) g.lineTo(x, shore(x) + wave);
+  g.lineTo(Z.w + 50, -50); g.closePath();
+  const gr = g.createLinearGradient(0, 0, 0, 300); gr.addColorStop(0, "#0d6fc4"); gr.addColorStop(0.7, "#2bb5e8"); gr.addColorStop(1, "#7fe3f2");
+  g.fillStyle = gr; g.globalAlpha = 0.92; g.fill(); g.globalAlpha = 1;
+  for (const [off, a, w] of [[0, 0.9, 7], [-26, 0.35, 4], [-55, 0.2, 3]]) {
+    g.beginPath();
+    for (let x = -50; x <= Z.w + 50; x += 25) { const y = shore(x) + wave + off + Math.sin(x * 0.03 + t * 2 + off) * 3; x === -50 ? g.moveTo(x, y) : g.lineTo(x, y); }
+    g.strokeStyle = `rgba(255,255,255,${a})`; g.lineWidth = w; g.stroke();
+  }
+}
+const deepJellies = (() => { const r = seeded(77); return Array.from({ length: 14 }, () => ({ x: r(), y: r(), s: 0.6 + r() * 0.8, p: r() * 6, c: ["120,220,255", "255,120,230", "160,255,180"][Math.floor(r() * 3)] })); })();
+function drawDeepJellies() {                  // far-away glowing jellyfish (slow parallax)
+  const g = ctx, Z = W.Z, t = G.t;
+  g.save(); g.globalCompositeOperation = "lighter";
+  for (const j of deepJellies) {
+    const x = j.x * Z.w + (cam.x - Z.w / 2) * 0.35, y = ((j.y * Z.h - t * 8 * j.s) % Z.h + Z.h) % Z.h + (cam.y - Z.h / 2) * 0.35;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 2 + j.p), r = 16 * j.s;
+    circle(g, x, y, r * 3); g.fillStyle = radial(g, x, y, r * 3, [`rgba(${j.c},${0.18 * pulse})`, "rgba(0,0,0,0)"], 0, 0); g.fill();
+    g.beginPath(); g.arc(x, y, r, Math.PI, 0); g.closePath(); g.fillStyle = `rgba(${j.c},${0.35 * pulse})`; g.fill();
+    g.strokeStyle = `rgba(${j.c},${0.25 * pulse})`; g.lineWidth = 2;
+    for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(x + k * r * 0.35, y); g.quadraticCurveTo(x + k * r * 0.4 + Math.sin(t * 2 + k) * 5, y + r, x + k * r * 0.3, y + r * 2); g.stroke(); }
+  }
+  g.restore();
+}
+function drawParticles(g) {
+  for (const p of W.parts) {
+    const a = Math.max(0, p.life / p.max);
+    if (p.type === "dot") { g.fillStyle = `rgba(${p.col},${a})`; g.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); }
+    else if (p.type === "spark") { g.strokeStyle = `rgba(${p.col},${a})`; g.lineWidth = 2.5; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); g.stroke(); }
+    else if (p.type === "bubble") {
+      circle(g, p.x, p.y, p.size); g.strokeStyle = `rgba(220,245,255,${Math.min(1, a * 1.5) * 0.75})`; g.lineWidth = 1.2; g.stroke();
+      circle(g, p.x - p.size * 0.35, p.y - p.size * 0.35, p.size * 0.3); g.fillStyle = `rgba(255,255,255,${a * 0.8})`; g.fill();
+    } else if (p.type === "ring") {
+      const k = 1 - a; circle(g, p.x, p.y, lerp(p.r, p.r1, k)); g.strokeStyle = `rgba(${p.col},${a * 0.9})`; g.lineWidth = 4 * a + 1; g.stroke();
     }
   }
 }
-function drawEnd() {
-  const e = G.endInfo, f = FORMS[G.utveclad];
-  pixelText("FULLY EVOLVED!", 0, 150, 4, "#fff", 0.5, BLUE);
-  pixelText(f.label, 0, 112, 2, "#9fb4ff", 0.5, BLUE);
-  drawCostume(COST[f.sprite][G.player.costume], 0, 10 + Math.sin(G.t * 2) * 4, 1000);
-  pixelText("TIME " + fmtTime(e.time) + "   BEST " + fmtTime(e.best), 0, -78, 2, "#fff", 0.5, BLUE);
-  if (e.record) pixelText(e.newForm ? "NEW FORM FOUND!" : "NEW RECORD!", 0, -100, 2, "#ffe066", 0.5, BLUE);
-  pixelText("FORMS FOUND " + save.found.length + "/" + FINAL_FORMS.length, 0, -122, 1, "rgba(255,255,255,.8)");
-  if (e.t > 1.5) pixelText("CLICK TO PLAY AGAIN", 0, -145, 2, Math.sin(G.t * 5) > 0 ? "#fff" : "#9fb4ff", 0.5, BLUE);
+function drawForeground() {
+  const g = ctx, Z = W.Z, t = G.t;
+  if (Z.kind === "sea" || Z.kind === "open") {
+    // kelp fronds drifting between you and the camera: they move 30% faster = parallax
+    for (const d of W.deco) {
+      const x = d.x + (d.x - cam.x) * 0.3, y = d.y + (d.y - cam.y) * 0.3;
+      if (Math.abs(x - cam.x) > BW / ZOOM || Math.abs(y - cam.y) > BH / ZOOM) continue;
+      const pts = [];
+      for (let i = 0; i <= 10; i++) pts.push([x + Math.sin(t * 0.8 + d.ph + i * 0.5) * i * 2.2 + i * d.len * 0.04, y + i * d.len / 10]);
+      g.save(); g.globalAlpha = Z.kind === "sea" ? 0.35 : 0.28; g.lineCap = "round";
+      polyline(g, pts); g.lineWidth = d.w; g.strokeStyle = "#04352a"; g.stroke();
+      for (let i = 2; i < 10; i += 2) { const [px, py] = pts[i]; g.beginPath(); g.ellipse(px + (i % 4 ? 9 : -9), py, 11, 5, i % 4 ? 0.5 : -0.5, 0, Math.PI * 2); g.fillStyle = "#04352a"; g.fill(); }
+      g.restore();
+    }
+  }
+  if (Z.kind === "land") {
+    for (const d of W.deco.slice(0, 12)) {    // drifting cloud + palm-leaf shadows
+      const x = ((d.x + t * 18 * (0.5 + d.ph / 12)) % (Z.w + 400)) - 200 + (d.x - cam.x) * 0.15, y = d.y + (d.y - cam.y) * 0.15;
+      g.save(); g.globalAlpha = 0.13; g.fillStyle = "#3b2a10";
+      g.beginPath(); g.ellipse(x, y, d.len, d.len * 0.45, 0.3, 0, Math.PI * 2); g.fill(); g.restore();
+    }
+  }
+  // god rays (screen space)
+  if (Z.kind !== "deep") {
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "lighter";
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const x0 = ((i / n) * BW * 1.4 - cam.x * ZOOM * 0.08 + Math.sin(t * 0.25 + i) * 40 * DPR) % (BW * 1.4) - BW * 0.1;
+      const w0 = (40 + (i * 37) % 60) * DPR * (Z.kind === "land" ? 2 : 1);
+      const a = (Z.kind === "land" ? 0.035 : 0.06) * (0.6 + 0.4 * Math.sin(t * 0.5 + i * 1.7));
+      const gr = g.createLinearGradient(0, 0, 0, BH); gr.addColorStop(0, `rgba(255,255,230,${a})`); gr.addColorStop(1, "rgba(255,255,230,0)");
+      g.fillStyle = gr;
+      g.beginPath(); g.moveTo(x0, 0); g.lineTo(x0 + w0, 0); g.lineTo(x0 + w0 * 2.2 + BH * 0.35, BH); g.lineTo(x0 + BH * 0.35, BH); g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+}
+function drawSnow() {                           // floating specks with depth
+  const g = ctx, Z = W.Z;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const col = Z.kind === "land" ? "255,250,220" : Z.kind === "deep" ? "150,220,255" : "230,250,255";
+  for (const s of W.snow) {
+    const x = ((s.x * BW - cam.x * ZOOM * s.d + G.t * 6 * DPR) % BW + BW) % BW;
+    const y = ((s.y * BH - cam.y * ZOOM * s.d + G.t * (Z.kind === "land" ? -4 : 10) * DPR * s.d) % BH + BH) % BH;
+    g.fillStyle = `rgba(${col},${0.12 + s.d * 0.3})`;
+    g.fillRect(x, y, s.s * DPR * s.d, s.s * DPR * s.d);
+  }
+  g.restore();
+}
+function drawDarkness() {
+  const g = ctx, p = worldToScreen(P.x, P.y), t = G.t;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const R = (300 + (RUN.stats.eat >= 2 ? 60 : 0)) * ZOOM;
+  const gr = g.createRadialGradient(p.x, p.y, R * 0.18, p.x, p.y, R);
+  gr.addColorStop(0, "rgba(0,2,12,0)"); gr.addColorStop(0.55, "rgba(0,2,12,.55)"); gr.addColorStop(1, "rgba(0,2,12,.94)");
+  g.fillStyle = gr; g.fillRect(0, 0, BW, BH);
+  g.globalCompositeOperation = "lighter";
+  for (const e of W.enemies) if (e.type === "angler") {   // lures shine through the dark
+    const lx = 30 + Math.sin(t * 2 + e.seed) * 4, ly = -30 + Math.cos(t * 1.7 + e.seed) * 3;
+    const c = Math.cos(e.ang), s = Math.sin(e.ang);
+    const q = worldToScreen(e.x + c * lx - s * ly, e.y + s * lx + c * ly), r = 60 * ZOOM * (0.85 + 0.15 * Math.sin(t * 4 + e.seed));
+    g.fillStyle = radial(g, q.x, q.y, r, ["rgba(255,250,150,.85)", "rgba(255,240,120,.25)", "rgba(0,0,0,0)"], 0, 0);
+    circle(g, q.x, q.y, r); g.fill();
+  }
+  for (const f of W.food) { const q = worldToScreen(f.x, f.y), r = 22 * ZOOM; g.fillStyle = radial(g, q.x, q.y, r, [f.sprite === "meat" ? "rgba(255,100,160,.35)" : "rgba(90,255,140,.35)", "rgba(0,0,0,0)"], 0, 0); circle(g, q.x, q.y, r); g.fill(); }
+  g.restore();
 }
 
-// ---------------------------------------------------------------- main loop
+// ---------------------------------------------------------------- HUD
+function drawHeart(x, y, s, col) {
+  const g = ctx; g.save(); g.translate(x, y); g.scale(s / 20, s / 20);
+  g.beginPath(); g.moveTo(0, 6); g.bezierCurveTo(-12, -2, -8, -14, 0, -7); g.bezierCurveTo(8, -14, 12, -2, 0, 6); g.closePath();
+  strokeFill(g, col, "#3a0008", 2.5); g.restore();
+}
+function statIcon(kind, x, y, s) {
+  const g = ctx; g.save(); g.translate(x, y); g.lineJoin = "round"; g.lineCap = "round";
+  if (kind === "atk") { g.beginPath(); g.moveTo(-s * 0.5, -s * 0.5); g.lineTo(s * 0.1, s * 0.55); g.lineTo(s * 0.5, -s * 0.5); g.quadraticCurveTo(0, -s * 0.1, -s * 0.5, -s * 0.5); strokeFill(g, "#fff3e0", "#7a1d10", 2.2); }
+  if (kind === "eat") { g.beginPath(); g.arc(0, 0, s * 0.5, 0.6, Math.PI * 2 - 0.6); g.lineTo(0, 0); g.closePath(); strokeFill(g, "#ffd23f", "#6b4a00", 2.2); }
+  if (kind === "def") { g.beginPath(); g.moveTo(0, -s * 0.55); g.lineTo(s * 0.48, -s * 0.3); g.quadraticCurveTo(s * 0.4, s * 0.35, 0, s * 0.58); g.quadraticCurveTo(-s * 0.4, s * 0.35, -s * 0.48, -s * 0.3); g.closePath(); strokeFill(g, "#5fb8ff", "#0b3a66", 2.2); }
+  g.restore();
+}
+function drawVolume() {
+  const x = VW - 210, y = 20;
+  panel(x, y, 190, 46, { r: 23 });
+  const g = ctx;
+  G.buttons.push({ x, y, w: 46, h: 46, click: () => { save.muted = !save.muted; applyVolume(); } });
+  g.save(); g.translate(x + 24, y + 23);
+  g.beginPath(); g.moveTo(-9, -5); g.lineTo(-3, -5); g.lineTo(4, -11); g.lineTo(4, 11); g.lineTo(-3, 5); g.lineTo(-9, 5); g.closePath(); g.fillStyle = "#fff"; g.fill();
+  if (save.muted) { g.strokeStyle = "#ff5a5a"; g.lineWidth = 3; g.beginPath(); g.moveTo(-12, -12); g.lineTo(12, 12); g.stroke(); }
+  else { g.strokeStyle = "#fff"; g.lineWidth = 2.2; g.beginPath(); g.arc(5, 0, 7, -0.8, 0.8); g.stroke(); }
+  g.restore();
+  for (let i = 0; i < 5; i++) {
+    const bx = x + 56 + i * 24, bh = 10 + i * 5, on = !save.muted && save.vol >= (i + 1) / 5 - 0.01;
+    roundRect(g, bx, y + 34 - bh, 16, bh, 4); g.fillStyle = on ? "#7dfcff" : "rgba(255,255,255,.18)"; g.fill();
+    G.buttons.push({ x: bx - 4, y, w: 24, h: 46, click: () => { save.vol = (i + 1) / 5; save.muted = false; applyVolume(); } });
+  }
+}
+function drawHUD() {
+  setUITransform();
+  const g = ctx, Z = W.Z;
+  // health
+  panel(18, 18, 300, 62, { r: 20 });
+  drawHeart(48, 50, 34, P.hp / maxHp() < 0.34 && Math.sin(G.t * 10) > 0 ? "#ff9aa8" : "#ff3b55");
+  const hpw = 200, hx = 78, hy = 38;
+  roundRect(g, hx, hy, hpw, 22, 11); g.fillStyle = "rgba(0,0,0,.45)"; g.fill();
+  const k = clamp(P.hp / maxHp(), 0, 1);
+  if (k > 0) { roundRect(g, hx, hy, Math.max(22, hpw * k), 22, 11); const gr = g.createLinearGradient(0, hy, 0, hy + 22); gr.addColorStop(0, "#ff7a8c"); gr.addColorStop(1, "#d11a3a"); g.fillStyle = gr; g.fill(); }
+  g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 1.5;
+  for (let i = 1; i < maxHp(); i++) { const sx = hx + hpw * i / maxHp(); g.beginPath(); g.moveTo(sx, hy + 3); g.lineTo(sx, hy + 19); g.stroke(); }
+  txt(`${Math.ceil(P.hp)} / ${maxHp()}`, hx + hpw / 2, hy + 12, 15, "#fff", { stroke: "rgba(0,0,0,.5)", lw: 3 });
+  // stats
+  [["atk", "ATK"], ["eat", "EAT"], ["def", "DEF"]].forEach(([s, label], i) => {
+    const x = 18 + i * 100, y = 88;
+    panel(x, y, 92, 38, { r: 19 });
+    statIcon(s, x + 20, y + 19, 20);
+    for (let j = 0; j < 3; j++) { circle(g, x + 44 + j * 15, y + 19, 5); g.fillStyle = RUN.stats[s] > j ? { atk: "#ff5a4f", eat: "#ffd23f", def: "#5fb8ff" }[s] : "rgba(255,255,255,.15)"; g.fill(); }
+  });
+  // zone title
+  txt(Z.name.toUpperCase(), VW / 2, 34, 24, "#fff", { stroke: "rgba(0,20,60,.6)", lw: 5 });
+  txt(`ZONE ${W.z + 1} / 4`, VW / 2, 60, 14, "rgba(200,235,255,.85)", { weight: 600 });
+  // boss bar
+  if (W.boss) {
+    const bw = Math.min(520, VW - 520), bx = VW / 2 - bw / 2, by = 82;
+    txt("THE APEX", VW / 2, by - 2, 18, "#ffb3c0", { stroke: "#3a0010", lw: 4 });
+    roundRect(g, bx, by + 10, bw, 18, 9); g.fillStyle = "rgba(0,0,0,.55)"; g.fill();
+    roundRect(g, bx, by + 10, Math.max(18, bw * W.boss.hp / ENEMY.boss.hp), 18, 9);
+    const gr = g.createLinearGradient(bx, 0, bx + bw, 0); gr.addColorStop(0, "#ff2a55"); gr.addColorStop(1, "#ff8a3d"); g.fillStyle = gr; g.fill();
+    roundRect(g, bx, by + 10, bw, 18, 9); g.strokeStyle = "#3a0010"; g.lineWidth = 2.5; g.stroke();
+  }
+  // his level meter (levelmätare), now an evolution bar
+  const mw = Math.min(620, VW - 520), mx = VW / 2 - mw / 2, my = VH - 58;
+  panel(mx - 16, my - 30, mw + 32, 68, { r: 24 });
+  const mk = clamp(RUN.meter / Z.goal, 0, 1);
+  roundRect(g, mx, my, mw, 22, 11); g.fillStyle = "rgba(0,0,0,.5)"; g.fill();
+  if (mk > 0) {
+    g.save(); roundRect(g, mx, my, Math.max(22, mw * mk), 22, 11); g.clip();
+    const gr = g.createLinearGradient(mx, 0, mx + mw, 0); gr.addColorStop(0, "#00ffff"); gr.addColorStop(1, "#21a6ff");
+    g.fillStyle = gr; g.fillRect(mx, my, mw, 22);
+    g.globalAlpha = 0.25; g.fillStyle = "#fff"; for (let x = mx - 40 + (G.t * 40) % 40; x < mx + mw; x += 40) { g.beginPath(); g.moveTo(x, my); g.lineTo(x + 18, my); g.lineTo(x + 6, my + 22); g.lineTo(x - 12, my + 22); g.fill(); }
+    g.restore();
+  }
+  txt(`LEVEL ${W.z + 1}`, mx, my - 13, 16, "#7dfcff", { align: "left", weight: 700 });
+  txt(W.bossPhase ? "DEFEAT THE APEX!" : "EVOLUTION", VW / 2, my - 13, 14, "rgba(220,250,255,.9)", { weight: 600 });
+  txt(`${Math.min(RUN.meter, Z.goal)} / ${Z.goal}`, mx + mw, my - 13, 16, "#fff", { align: "right" });
+  // minimap
+  const mmw = 200, mmh = mmw * Z.h / Z.w, mmx = VW - mmw - 22, mmy = VH - mmh - 22, s = mmw / Z.w;
+  panel(mmx - 6, mmy - 6, mmw + 12, mmh + 12, { r: 14, fill: "rgba(4,12,34,.7)" });
+  g.save(); roundRect(g, mmx, mmy, mmw, mmh, 10); g.clip();
+  g.globalAlpha = 0.5; g.drawImage(W.floor.canvas, mmx, mmy, mmw, mmh); g.globalAlpha = 1;
+  for (const f of W.food) { g.fillStyle = f.sprite === "meat" ? "#ff8fb0" : "#5dff8a"; g.fillRect(mmx + f.x * s - 1.5, mmy + f.y * s - 1.5, 3, 3); }
+  for (const e of W.enemies) { const D = ENEMY[e.type]; circle(g, mmx + e.x * s, mmy + e.y * s, D.boss ? 6 + Math.sin(G.t * 8) : D.prey ? 2.5 : 3.2); g.fillStyle = D.prey ? "#ffd21f" : "#ff3b3b"; g.fill(); }
+  const vw = BW / ZOOM * s, vh = BH / ZOOM * s;
+  g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 1.5; g.strokeRect(mmx + cam.x * s - vw / 2, mmy + cam.y * s - vh / 2, vw, vh);
+  g.save(); g.translate(mmx + P.x * s, mmy + P.y * s); g.rotate(P.ang); g.beginPath(); g.moveTo(7, 0); g.lineTo(-5, -5); g.lineTo(-3, 0); g.lineTo(-5, 5); g.closePath(); g.fillStyle = "#fff"; g.fill(); g.restore();
+  g.restore();
+  drawVolume();
+  // pause button
+  if (button("pause", VW - 270, 20, 46, 46, "II", () => { G.paused = true; }, { size: 18, col: ["#4a6fa8", "#2c4a7a", "#14254a"] })) {}
+  // touch attack button
+  if (isTouch) {
+    circle(g, 90, VH - 150, 54); g.fillStyle = "rgba(255,255,255,.18)"; g.fill(); g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 3; g.stroke();
+    txt(RUN.type === "meat" ? "BITE" : "SWING", 90, VH - 150, 18, "#fff");
+  }
+  drawToasts();
+  if (P.dead) {
+    g.fillStyle = `rgba(80,0,10,${Math.min(0.5, (2.6 - P.dead) * 0.6)})`; g.fillRect(0, 0, VW, VH);
+    txt("YOU GOT EATEN!", VW / 2, VH / 2 - 20, 64, "#fff", { stroke: "#5a0010", lw: 10 });
+  }
+  if (G.paused) drawPause();
+}
+function drawToasts() {
+  let y = 170;
+  for (const t of G.toasts) {
+    const a = Math.min(1, t.t / 0.4, (t.max - t.t) / 0.25 + 0.001);
+    ctx.save(); ctx.globalAlpha = clamp(a, 0, 1);
+    const big = !t.sub && t.text.length < 30 && t.text === t.text.toUpperCase();
+    txt(t.text, VW / 2, y, big ? 44 : t.sub ? 40 : 22, "#fff", { stroke: "rgba(0,20,60,.75)", lw: big ? 9 : 6 });
+    if (t.sub) txt(t.sub, VW / 2, y + 36, 19, "#bfeaff", { stroke: "rgba(0,20,60,.6)", lw: 4, weight: 600 });
+    ctx.restore();
+    y += t.sub ? 90 : 50;
+  }
+}
+function drawPause() {
+  const g = ctx;
+  g.fillStyle = "rgba(2,8,24,.65)"; g.fillRect(0, 0, VW, VH);
+  panel(VW / 2 - 200, VH / 2 - 170, 400, 330, { r: 30 });
+  txt("PAUSED", VW / 2, VH / 2 - 115, 48, "#fff", { stroke: "#0a2cff", lw: 8 });
+  button("resume", VW / 2 - 130, VH / 2 - 50, 260, 64, "RESUME", () => { G.paused = false; });
+  button("quit", VW / 2 - 130, VH / 2 + 34, 260, 56, "MAIN MENU", () => go(toMenu), { col: ["#ff8a6b", "#e0442a", "#6b1408"] });
+  txt("Volume: top right, or M / - / +", VW / 2, VH / 2 + 130, 15, "rgba(200,230,255,.8)", { weight: 500 });
+}
+
+// ---------------------------------------------------------------- MENU (his space scene)
+function menuPlanets() {
+  const b = G.t;
+  return [
+    ["sun", VW * 0.02 + Math.sin(b * 0.5) * 4, VH * 1.0 + Math.sin(b * 0.7) * 3, Math.min(VW, VH) * 0.32],
+    ["mars", VW * 0.15 + Math.sin(b * 0.9 + 1) * 8, VH * 0.2 + Math.cos(b * 0.6) * 5, Math.min(VW, VH) * 0.075],
+    ["moon", VW * 0.82 + Math.sin(b * 0.8 + 2) * 7, VH * 0.18 + Math.cos(b * 0.9 + 1) * 4, Math.min(VW, VH) * 0.055],
+    ["earth", VW * 0.88 + Math.sin(b * 0.6 + 3) * 6, VH * 0.86 + Math.cos(b * 0.5 + 2) * 5, Math.min(VW, VH) * 0.15],
+  ];
+}
+function drawPlanets() {
+  const px = (mouse.ux / VW - 0.5), py = (mouse.uy / VH - 0.5);
+  for (const [n, x, y, r] of menuPlanets()) {
+    const dx = x - px * r * 0.25, dy = y - py * r * 0.25;
+    ({ sun: drawSun, mars: drawMars, moon: drawMoon, earth: drawEarth })[n](ctx, dx, dy, r, G.t);
+  }
+}
+function drawLogo(x, y, size) {
+  const g = ctx, word = "ANIMOL";
+  g.save();
+  g.font = `700 ${size}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
+  const total = g.measureText(word).width;
+  let cx = x - total / 2;
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i], w = g.measureText(ch).width, by = y + Math.sin(G.t * 2.2 + i * 0.7) * size * 0.04, rot = Math.sin(G.t * 1.6 + i) * 0.04;
+    g.save(); g.translate(cx + w / 2, by); g.rotate(rot);
+    g.lineJoin = "round";
+    g.lineWidth = size * 0.2; g.strokeStyle = "#020a3a"; g.strokeText(ch, 0, size * 0.04);
+    g.lineWidth = size * 0.11; g.strokeStyle = "#fff"; g.strokeText(ch, 0, 0);
+    const gr = g.createLinearGradient(0, -size / 2, 0, size / 2); gr.addColorStop(0, "#4fe3ff"); gr.addColorStop(0.5, "#1f6bff"); gr.addColorStop(1, "#0a2cff");
+    g.fillStyle = gr; g.fillText(ch, 0, 0);
+    g.restore();
+    cx += w;
+  }
+  g.restore();
+}
+function drawMenu() {
+  setUITransform();
+  drawSpace(ctx, G.t, mouse.ux / VW - 0.5, mouse.uy / VH - 0.5);
+  drawPlanets();
+  const cx = VW / 2, cy = VH * 0.36;
+  drawLogo(cx, cy, Math.min(150, VW * 0.13));
+  txt("an evolution game", cx, cy + Math.min(150, VW * 0.13) * 0.62, 24, "#bfe4ff", { weight: 500 });
+  const k = Math.min(VW, VH) / 720 * 2.2;
+  drawCreature(ctx, cx - 300 * Math.min(1, VW / 1280), VH * 0.62 + Math.sin(G.t * 1.5) * 8, Math.sin(G.t * 0.8) * 0.15, k, petLook(menuPets.meat, { atk: 0, eat: 0, def: 0 }));
+  drawCreature(ctx, cx + 300 * Math.min(1, VW / 1280), VH * 0.62 + Math.sin(G.t * 1.5 + 2) * 8, Math.PI + Math.sin(G.t * 0.8 + 1) * 0.15, k, petLook(menuPets.plant, { atk: 0, eat: 0, def: 0 }));
+  button("play", cx - 130, VH * 0.57, 260, 84, "PLAY", () => { startAudioOnce(); go(toChoose); }, { size: 40 });
+  if (save.found.length) txt(`Forms found: ${save.found.length} / 8`, cx, VH * 0.57 + 120, 18, "#d9f1ff", { weight: 600 });
+  txt("Mouse or WASD to swim  ·  E / Space / Click to attack  ·  P to pause", cx, VH - 26, 15, "rgba(190,215,255,.7)", { weight: 500 });
+  if (!G.audioStarted) txt("click anywhere for sound", cx, VH * 0.57 + 150, 15, `rgba(255,255,255,${0.4 + 0.3 * Math.sin(G.t * 4)})`, { weight: 500 });
+  drawVolume();
+}
+function drawChoose() {
+  setUITransform();
+  drawSpace(ctx, G.t, mouse.ux / VW - 0.5, mouse.uy / VH - 0.5);
+  txt("CHOOSE YOUR ANIMOL", VW / 2, VH * 0.13, 52, "#fff", { stroke: "#0a2cff", lw: 10 });
+  const cards = [
+    { type: "meat", name: "MEAT EATER", lines: ["Eats meat. Bites with brown pincers.", "Can hunt the little yellow fish."], col: ["#ff8a6b", "#e0442a", "#6b1408"] },
+    { type: "plant", name: "PLANT EATER", lines: ["Eats plants. Whips its long vine", "in a wide circle around itself."], col: ["#3df08a", "#0fae57", "#07612f"] },
+  ];
+  const cw = Math.min(380, VW * 0.36), ch = Math.min(470, VH * 0.68);
+  cards.forEach((c, i) => {
+    const x = VW / 2 + (i ? 30 : -30 - cw), y = VH * 0.22;
+    const hov = mouse.ux >= x && mouse.ux <= x + cw && mouse.uy >= y && mouse.uy <= y + ch;
+    if (hov) G._hovered = c.type;
+    if (hov && G.hoverId !== c.type) { G.hoverId = c.type; SYN.hover(); menuPets[c.type].next = 0; }
+    const lift = hov ? -8 : 0;
+    panel(x, y + lift, cw, ch, { r: 30, fill: hov ? "rgba(20,40,90,.85)" : "rgba(8,18,48,.75)", line: hov ? c.col[0] : "rgba(140,200,255,.3)", lw: hov ? 4 : 2.5 });
+    const pcx = x + cw / 2, pcy = y + lift + ch * 0.36;
+    circle(ctx, pcx, pcy, ch * 0.22); ctx.fillStyle = radial(ctx, pcx, pcy, ch * 0.22, [hov ? "rgba(120,220,255,.35)" : "rgba(120,220,255,.15)", "rgba(0,0,0,0)"], 0, 0); ctx.fill();
+    drawCreature(ctx, pcx, pcy + Math.sin(G.t * 2 + i) * 6, Math.sin(G.t * 0.7 + i) * 0.25, ch / 160, petLook(menuPets[c.type], { atk: 0, eat: 0, def: 0 }));
+    txt(c.name, pcx, y + lift + ch * 0.66, 34, "#fff", { stroke: c.col[2], lw: 7 });
+    c.lines.forEach((l, j) => txt(l, pcx, y + lift + ch * 0.75 + j * 24, 17, "#cfe7ff", { weight: 500 }));
+    button("pick" + c.type, pcx - 100, y + lift + ch - 76, 200, 56, "CHOOSE", () => go(() => newRun(c.type)), { col: c.col });
+    G.buttons.push({ x, y, w: cw, h: ch - 90, click: () => go(() => newRun(c.type)) });
+  });
+  button("back", 24, 24, 130, 48, "‹ BACK", () => go(toMenu), { size: 20, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
+  drawVolume();
+}
+
+// ---------------------------------------------------------------- EVOLVE screen
+function drawEvolve() {
+  drawWorld();
+  setUITransform();
+  const g = ctx, t = G.evoT;
+  g.fillStyle = `rgba(2,6,24,${Math.min(0.78, t * 1.2)})`; g.fillRect(0, 0, VW, VH);
+  // glowing rays behind LEVEL UP!
+  g.save(); g.translate(VW / 2, VH * 0.2); g.rotate(G.t * 0.3); g.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 14; i++) { g.rotate(Math.PI * 2 / 14); g.beginPath(); g.moveTo(0, 0); g.lineTo(-40, -VW); g.lineTo(40, -VW); g.closePath(); g.fillStyle = `rgba(80,180,255,${0.07 * Math.min(1, t * 2)})`; g.fill(); }
+  g.restore();
+  const k = Math.min(1, t / 0.5), sc = easeOutBack(k);
+  g.save(); g.translate(VW / 2, VH * 0.2); g.scale(sc, sc);
+  txt("LEVEL UP!", 0, 0, 96, "#fff", { stroke: "#0a2cff", lw: 16, glow: "#4fe3ff", blur: 30 });
+  g.restore();
+  const next = RUN.zone + 1;
+  if (t > 0.7) txt(next === 3 ? "Choose how to evolve - and grow LEGS for the shore!" : "Choose how to evolve", VW / 2, VH * 0.2 + 74, 24, "#d9f1ff", { weight: 600 });
+  if (t < 1.4) return;
+  const kinds = ["attack", "eat", "defence"], cw = Math.min(300, (VW - 120) / 3), ch = Math.min(440, VH * 0.6);
+  kinds.forEach((kind, i) => {
+    const appear = clamp((t - 1.4 - i * 0.12) / 0.35, 0, 1); if (!appear) return;
+    const x = VW / 2 + (i - 1) * (cw + 24) - cw / 2, y = VH * 0.33 + (1 - easeOutBack(appear)) * 60;
+    const T = EVO_TXT[kind], sk = kind === "attack" ? "atk" : kind === "eat" ? "eat" : "def";
+    const hov = mouse.ux >= x && mouse.ux <= x + cw && mouse.uy >= y && mouse.uy <= y + ch;
+    if (hov) G._hovered = kind;
+    if (hov && G.hoverId !== kind) { G.hoverId = kind; SYN.hover(); }
+    g.save(); g.globalAlpha = appear;
+    panel(x, y - (hov ? 8 : 0), cw, ch, { r: 28, fill: hov ? "rgba(24,44,96,.92)" : "rgba(10,20,52,.88)", line: hov ? T.col : "rgba(140,200,255,.3)", lw: hov ? 4 : 2.5 });
+    const yy = y - (hov ? 8 : 0);
+    const stats = Object.assign({}, RUN.stats); stats[sk]++;
+    const pcx = x + cw / 2, pcy = yy + ch * 0.32;
+    circle(g, pcx, pcy, cw * 0.36); g.fillStyle = radial(g, pcx, pcy, cw * 0.36, [T.col + "55", "rgba(0,0,0,0)"], 0, 0); g.fill();
+    const L = creatureLook(RUN.type, stats, { evolved: true, legs: next === 3, moving: 0.5, walk: G.t * 8, angry: hov ? 1 : 0 });
+    drawCreature(g, pcx, pcy + Math.sin(G.t * 2 + i) * 5, -0.2 + Math.sin(G.t + i) * 0.15, cw / 115, L);
+    statIcon(sk, pcx - 70, yy + ch * 0.62, 26);
+    txt(T.name, pcx + 12, yy + ch * 0.62, 34, "#fff", { stroke: "#000", lw: 6 });
+    txt("Level " + stats[sk], pcx, yy + ch * 0.62 + 32, 16, T.col, { weight: 700 });
+    txt(featText(kind, stats[sk]), pcx, yy + ch * 0.62 + 60, 18, "#ffffff", { weight: 600 });
+    const words = T.main.split(", ");
+    words.forEach((w, j) => txt(w, pcx, yy + ch * 0.62 + 88 + j * 22, 15, "#bcd7f5", { weight: 500 }));
+    g.restore();
+    if (appear >= 1) G.buttons.push({ x, y: yy, w: cw, h: ch, click: () => pickEvolution(kind) });
+  });
+}
+
+// ---------------------------------------------------------------- ENDING
+function drawEnding() {
+  setUITransform();
+  const g = ctx, E = RUN.end, t = E.t;
+  drawSpace(g, G.t, mouse.ux / VW - 0.5, mouse.uy / VH - 0.5);
+  drawPlanets();
+  // the final form
+  const cx = VW / 2, cy = VH * 0.36, k = Math.min(VW, VH) / 720 * 3.6;
+  circle(g, cx, cy, 160 * k / 3.6); g.fillStyle = radial(g, cx, cy, 160 * k / 3.6, ["rgba(120,255,200,.35)", "rgba(0,0,0,0)"], 0, 0); g.fill();
+  g.save(); g.translate(cx, cy); g.rotate(G.t * 0.2);
+  g.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 12; i++) { g.rotate(Math.PI / 6); g.beginPath(); g.moveTo(0, 0); g.lineTo(-25, -VH); g.lineTo(25, -VH); g.closePath(); g.fillStyle = "rgba(120,255,200,.05)"; g.fill(); }
+  g.restore();
+  const L = creatureLook(RUN.type, RUN.stats, { evolved: true, legs: true, moving: 1, walk: G.t * 7, angry: Math.sin(G.t * 1.3) > 0.7 ? 1 : 0, open: 0.4 + Math.sin(G.t * 4) * 0.3 });
+  drawCreature(g, cx, cy + Math.sin(G.t * 1.7) * 10, -Math.PI / 2 + Math.sin(G.t * 0.9) * 0.2, k, L);
+  for (let i = 0; i < 30; i++) {                // confetti sparkles
+    const a = i * 2.4 + G.t * 0.5, r = 120 * k / 3.6 + (G.t * 40 + i * 37) % 300;
+    g.fillStyle = `hsla(${(i * 47) % 360},90%,70%,${Math.max(0, 1 - r / 420)})`; g.fillRect(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 5, 5);
+  }
+  const ty = VH * 0.62;
+  g.save(); const s = easeOutBack(Math.min(1, t / 0.6)); g.translate(cx, ty); g.scale(s, s);
+  txt("APEX ANIMOL", 0, 0, 74, "#fff", { stroke: "#0a2cff", lw: 12, glow: "#4fe3ff", blur: 26 });
+  g.restore();
+  txt((RUN.type === "meat" ? "MEAT EATER" : "PLANT EATER") + "  ·  " + E.title, cx, ty + 56, 26, "#9ff7c8", { stroke: "#04301a", lw: 5 });
+  txt("From a tiny cell in the shallow sea to the top of the food chain!", cx, ty + 92, 18, "#d9f1ff", { weight: 500 });
+  txt(`Time ${fmtTime(RUN.time)}   ·   Best ${fmtTime(E.best)}   ·   Eaten ${RUN.deaths}x`, cx, ty + 124, 20, "#fff", { weight: 600 });
+  const badge = E.isNew ? "NEW FORM FOUND!" : E.record ? "NEW RECORD!" : "";
+  if (badge) txt(badge, cx, ty + 156, 22, "#ffe066", { stroke: "#5a3d00", lw: 5 });
+  txt(`Forms found: ${save.found.length} / 8  (try other types and evolutions!)`, cx, ty + 184, 16, "rgba(220,240,255,.8)", { weight: 500 });
+  if (t > 1.2) {
+    button("again", cx - 230, VH - 100, 210, 64, "PLAY AGAIN", () => go(toChoose), { size: 24 });
+    button("menu", cx + 20, VH - 100, 210, 64, "MAIN MENU", () => go(toMenu), { size: 24, col: ["#4a6fa8", "#2c4a7a", "#14254a"] });
+  }
+  drawVolume();
+}
+
+// ---------------------------------------------------------------- frame
+function draw() {
+  G.buttons = []; G._hovered = null;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  if (G.scene === "menu") drawMenu();
+  else if (G.scene === "choose") drawChoose();
+  else if (G.scene === "play") { drawWorld(); drawHUD(); }
+  else if (G.scene === "evolve") { drawEvolve(); drawVolume(); }
+  else if (G.scene === "ending") drawEnding();
+  if (!G._hovered) G.hoverId = null;
+  if (G.fade > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = `rgba(0,0,0,${G.fade})`; ctx.fillRect(0, 0, BW, BH); }
+  canvas.style.cursor = G._hovered ? "pointer" : "default";
+}
+
 let last = 0, acc = 0;
 function frame(now) {
-  if (G.scene === "loading" && loaded >= toLoad) toFlag();
-  acc += Math.min(0.25, (now - last) / 1000 || 0);
+  acc += Math.min(0.1, (now - last) / 1000 || 0);
   last = now;
-  while (acc >= STEP) { tick(); acc -= STEP; }
+  while (acc >= DT) { tick(DT); acc -= DT; }
   draw();
   requestAnimationFrame(frame);
 }
-if (!window.__ANIMOL_TEST) requestAnimationFrame(t => { last = t; frame(t); });
+if (!window.__ANIMOL_TEST) {
+  toMenu();
+  if (document.fonts && document.fonts.load) document.fonts.load(`700 40px Fredoka`).catch(() => {});
+  requestAnimationFrame(t => { last = t; frame(t); });
+}
+
 </script>
 </body>
 </html>
